@@ -1,0 +1,97 @@
+- name: Setting up server with basic configuration on {{ inventory_hostname }}
+  block:
+    - name: Update and upgrade apt packages on {{ inventory_hostname }}
+      apt:
+        upgrade: yes
+        update_cache: yes
+        cache_valid_time: 86400 #One day
+
+    - name: Install required package dependencies {{ inventory_hostname }}
+      apt:
+        name: "{{packages}}"
+        state: present
+      vars:
+        packages:
+          - ufw
+          - unzip
+          - openssl
+          - python-passlib
+          - python3-passlib
+
+    - name: Open ssh port on {{ inventory_hostname }}
+      ufw:
+        state: enabled
+        rule: allow
+        proto: tcp
+        from_ip: any
+        to_ip: any
+        port : '{{ item }}'
+      with_items:
+        - "22"
+
+    - name: Copy check_port script on {{ inventory_hostname }}
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        force: no
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+        mode: a+x
+      with_items:
+        - { src: 'misc/check_port.sh', dest: '{{ server.apps_dir}}' }
+
+    - name: Create cert directory on {{ inventory_hostname }}
+      file:
+        path: "{{ server.apps_dir + '/certs'}}"
+        state: directory
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+        mode: 0755
+
+    - name: Prepare openssl file to generate certificate on {{ inventory_hostname }}
+      template:
+        src: "openssl.cnf.j2"
+        dest: "{{ server.apps_dir + '/certs/openssl.cnf'}}"
+        force: yes
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+
+    - name: Generate server certificate on {{ inventory_hostname }}
+      shell:
+        cmd: openssl req -x509 -batch -nodes -days 3650 -newkey rsa:2048 -keyout server.key -out server.crt -config openssl.cnf
+        chdir: "{{ server.apps_dir + '/certs' }}"
+        creates: "{{ server.apps_dir + '/certs/server.crt' }}"
+      become_user: "{{ server.user }}"
+
+    - name: Read server certificate on {{ inventory_hostname }}
+      shell:
+        cmd: cat "{{ server.apps_dir + '/certs/server.crt' }}"
+      register: certificate_content
+
+    - name: Make content of certificate readable by ansible in other hosts
+      set_fact:
+        server_cert: "{{ certificate_content.stdout }}"
+
+    - name: Copying certificates on {{ inventory_hostname }}
+      copy:
+        content: "{{ item.content }}"
+        dest: "{{ item.dest }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+        force: yes
+      with_items:
+        - { content: '{{ hostvars["ds_viewer_server"]["server_cert"] }}', dest: '{{ server.apps_dir + "/certs/ds_viewer_server.crt" }}' }
+        - { content: '{{ hostvars["cordra_nsidr_server"]["server_cert"] }}', dest: '{{ server.apps_dir + "/certs/cordra_nsidr_server.crt" }}' }
+        - { content: '{{ hostvars["cordra_prov_server"]["server_cert"] }}', dest: '{{ server.apps_dir + "/certs/cordra_prov_server.crt" }}' }
+        - { content: '{{ hostvars["db_server"]["server_cert"] }}', dest: '{{ server.apps_dir + "/certs/db_server.crt" }}' }
+        - { content: '{{ hostvars["monitoring_server"]["server_cert"] }}', dest: '{{ server.apps_dir + "/certs/monitoring_server.crt" }}' }
+        - { content: '{{ hostvars["search_engine_server"]["server_cert"] }}', dest: '{{ server.apps_dir + "/certs/search_engine_server.crt" }}' }
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setting up server with basic configuration on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setting up server with basic configuration FINISHED on {{ inventory_hostname }}"

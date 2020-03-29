@@ -1,0 +1,15 @@
+[Unit]
+Description=Grafana
+Wants=network.target
+After=filebeat.service
+
+[Service]
+Type=simple
+WorkingDirectory={{ grafana.dir }}
+ExecStart={{ grafana.dir }}/bin/grafana-server --config {{ grafana.dir }}/conf/grafana.ini
+ExecStartPost={{ server.apps_dir}}/check_port.sh {{ grafana.http_port }} 60 5
+User={{ server.user }}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,15 @@
+[Unit]
+Description=MongoDB Database Service
+Wants=network.target
+After=network.target
+
+[Service]
+Type=forking
+ExecStart=/{{ mongodb.dir }}/bin/mongod --config {{ mongodb.dir }}/conf/mongod.conf
+ExecStartPost={{ server.apps_dir}}/check_port.sh {{ mongodb.port }} 60 5
+ExecReload=/usr/bin/pkill -F {{ mongodb.dir }}/mongod.pid
+Restart=always
+User={{ server.user }}
+
+[Install]
+WantedBy=multi-user.target

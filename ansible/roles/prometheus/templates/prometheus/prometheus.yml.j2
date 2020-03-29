@@ -1,0 +1,78 @@
+# https://prometheus.io/docs/prometheus/latest/configuration/configuration/
+global:
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  scrape_timeout: 10s # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+  - static_configs:
+    - targets:
+      # - alertmanager:9093
+
+# A list of scrape configurations.
+scrape_configs:
+  - job_name: 'prometheus'
+    metrics_path: /metrics
+    scheme: https
+    basic_auth:
+      username: prometheus
+      password: {{ prometheus.admin_password }}
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets: ['{{ prometheus.host_ip }}:{{ prometheus.http_port }}']
+
+  - job_name: 'node'
+    scheme: https
+    basic_auth:
+      username: node_exporter
+      password: {{ prometheus.admin_password }}
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets: ['{{ ds_viewer.host_ip }}:{{ ds_viewer.http_port }}']
+      - targets: ['{{ cordra.cordra_nsidr_server.host_ip }}:{{ node_exporter.http_port }}']
+      - targets: ['{{ cordra.cordra_prov_server.host_ip }}:{{ node_exporter.http_port }}']
+      - targets: ['{{ mongodb.host_ip }}:{{ node_exporter.http_port }}']
+      - targets: ['{{ elasticsearch.host_ip }}:{{ node_exporter.http_port }}']
+      - targets: ['{{ prometheus.host_ip }}:{{ node_exporter.http_port }}']
+
+  - job_name: 'prometheus_blackbox'
+    metrics_path: /metrics
+    scheme: https
+    basic_auth:
+      username: blackbox_exporter
+      password: {{ blackbox_exporter.admin_password }}
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets: ['{{ blackbox_exporter.host_ip }}:{{ blackbox_exporter.http_port }}']
+
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+        module: [http_2xx]
+    scheme: https
+    basic_auth:
+      username: blackbox_exporter
+      password: {{ blackbox_exporter.admin_password }}
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets:
+        - http://{{ ds_viewer.host_ip }}:{{ ds_viewer.http_port }}/
+        - https://{{ cordra.cordra_nsidr_server.host_ip }}:{{ cordra.https_port }}/
+        - http://{{ cordra.cordra_nsidr_server.host_ip }}:{{ cordra.http_port }}/
+        - https://{{ cordra.cordra_prov_server.host_ip }}:{{ cordra.https_port }}/
+        - http://{{ cordra.cordra_prov_server.host_ip }}:{{ cordra.http_port }}/
+        - {{ elasticsearch.address_scheme }}://{{ elasticsearch.host_ip }}:{{ elasticsearch.http_port }}/
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: {{ blackbox_exporter.host_ip }}:{{ blackbox_exporter.http_port }} # Blackbox exporter.

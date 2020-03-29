@@ -1,0 +1,29 @@
+---
+- name: Preparing required packages on {{ inventory_hostname }}
+  block:
+    - name: Install required package dependencies on {{ inventory_hostname }}
+      apt:
+        name: "{{packages}}"
+        state: present
+      vars:
+        packages:
+          - openjdk-8-jre
+          - unzip
+
+    - name: Create permanent environment variables on /etc/environment (which is system-wide, all users) on {{ inventory_hostname }}
+      lineinfile:
+        dest: /etc/environment
+        state: present
+        regexp: "^{{ item.key | regex_escape() }}="
+        line: "{{ item.key }}={{ item.value}}"
+      with_items: "{{ os_environment_variables }}"
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Prepare required packages on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Prepare required packages FINISHED on {{ inventory_hostname }}"
+  tags: ["prepare_packages"]

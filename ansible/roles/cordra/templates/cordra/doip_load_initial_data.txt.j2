@@ -1,0 +1,38 @@
+{% for cordra_user in cordra[instance_type].initial_users %}
+{
+    "targetId": "{{ cordra[instance_type].handle_prefix }}/service",
+    "operationId": "0.DOIP/Op.Create",
+    "authentication": {
+        "username": "admin",
+        "password": "{{ cordra.admin_password }}"
+    }
+}
+#
+{
+    "type": "User",
+    "attributes": {
+        "content": {
+            "username": "{{ cordra_user.username }}",
+            "password": "{{ cordra_user.password }}"
+        }
+    },
+    "elements": []
+}
+#
+#
+{% endfor %}
+{% for digital_object in digital_objects %}
+{
+    "targetId": "{{ cordra[instance_type].handle_prefix }}/service",
+    "operationId": "0.DOIP/Op.Create",
+    "authentication": {
+        "username": "admin",
+        "password": "{{ cordra.admin_password }}"
+    }
+}
+#
+{{ digital_object | to_json }}
+#
+#
+{% endfor %}
+Q

@@ -1,0 +1,68 @@
+---
+- name: Setup Elasticsearch
+  block:
+    # Download Elasticsearch distribution and unzip in /opt as zip has folder elasticsearch-x.x.x
+    - name: Download and unarchive Elasticsearch
+      unarchive:
+        src: "{{ elasticsearch.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ elasticsearch.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: elasticsearch_download
+
+    - name: Create simbolic link between elasticsearch-x.x.x and elasticsearch directory
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'elasticsearch-*' -exec ln -s {} "{{ elasticsearch.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ elasticsearch.dir }}"
+      when: elasticsearch_download.changed
+
+    - name: Configure Elasticsearch
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      with_items:
+        - { src: 'elasticsearch/elasticsearch.yml.j2', dest: '{{ elasticsearch.dir + "/config/elasticsearch.yml" }}' }
+        - { src: 'elasticsearch/password-tmp.txt.j2', dest: '{{ elasticsearch.dir + "/config/password-tmp.txt" }}' }
+      when: elasticsearch_download.changed
+
+    - name: Setup elasticsearch password
+      shell:
+        cmd: "{{ item }}"
+        chdir: "{{ elasticsearch.dir }}"
+        warn: false
+      become_user: "{{ server.user }}"
+      with_items:
+          - "./bin/elasticsearch-keystore create"
+          - "cat ./config/password-tmp.txt | ./bin/elasticsearch-keystore add --stdin bootstrap.password"
+          - "rm ./config/password-tmp.txt"
+      when: elasticsearch_download.changed
+
+    - name: Start Elasticsearch
+      shell:
+        cmd: nohup ./bin/elasticsearch -p elasticsearch.pid >> ./elasticsearch.log 2>&1 &
+        chdir: "{{ elasticsearch.dir }}"
+      become_user: "{{ server.user }}"
+      when: elasticsearch_download.changed
+
+    - name: Wait for Elasticsearch http port to become open on the box, don't start checking for 5 seconds
+      wait_for:
+        port: "{{ elasticsearch.http_port }}"
+        delay: 5
+        timeout: 300
+        state: started
+        msg: "Elasticsearch HTTP PORT is not Listening"
+      when: elasticsearch_download.changed
+      register: elasticsearch_up
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Elasticsearch"
+  always:
+    - debug:

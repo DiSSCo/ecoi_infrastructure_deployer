@@ -1,0 +1,15 @@
+[Unit]
+Description=Kibana
+Wants=network.target
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={{ kibana.dir }}
+ExecStart={{ kibana.dir }}/bin/kibana
+ExecStartPost={{ server.apps_dir}}/check_port.sh {{ kibana.http_port }} 60 5
+User={{ server.user }}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

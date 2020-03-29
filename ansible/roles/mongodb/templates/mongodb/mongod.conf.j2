@@ -1,0 +1,52 @@
+systemLog:
+   verbosity: 0
+   quiet: false
+   traceAllExceptions: true
+   syslogFacility: user
+   path: {{ mongodb.dir }}/log/mongod.log
+   logAppend: false
+   logRotate: rename
+   destination: file
+   timeStampFormat: iso8601-utc
+processManagement:
+   fork: true
+   pidFilePath: {{ mongodb.dir }}/mongod.pid
+   timeZoneInfo: /usr/share/zoneinfo
+net:
+   port: {{ mongodb.port }}
+   bindIp: 0.0.0.0
+   maxIncomingConnections: 65536
+   wireObjectCheck: true
+   ipv6: false
+   unixDomainSocket:
+      enabled: true
+      pathPrefix: /tmp
+      filePermissions: 0700
+   tls:
+      mode: disabled
+   compression:
+      compressors: snappy,zstd,zlib
+   serviceExecutor: synchronous
+security:
+   authorization: enabled
+setParameter:
+   enableLocalhostAuthBypass: false
+storage:
+   dbPath: {{ mongodb.dir }}/data
+   indexBuildRetry: true
+   journal:
+      enabled: true
+      commitIntervalMs: 100
+   directoryPerDB: true
+   syncPeriodSecs: 60
+   engine: wiredTiger
+   wiredTiger:
+      engineConfig:
+         cacheSizeGB: 0.25
+         journalCompressor: snappy
+         directoryForIndexes: true
+         maxCacheOverflowFileSizeGB: 0
+      collectionConfig:
+         blockCompressor: snappy
+      indexConfig:
+         prefixCompression: true

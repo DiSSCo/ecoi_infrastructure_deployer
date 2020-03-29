@@ -1,0 +1,16 @@
+[Unit]
+Description=Elasticsearch RESTful search and analytics engine
+Wants=network.target
+After=syslog.target network-online.target
+
+[Service]
+Type=forking
+WorkingDirectory={{ elasticsearch.dir }}
+ExecStart={{ elasticsearch.dir }}/bin/elasticsearch -d -p {{ elasticsearch.dir }}/elasticsearch.pid
+ExecStartPost={{ server.apps_dir}}/check_port.sh {{ elasticsearch.http_port }} 60 5
+ExecReload=/usr/bin/pkill -F {{ elasticsearch.dir }}/elasticsearch.pid
+User={{ server.user }}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

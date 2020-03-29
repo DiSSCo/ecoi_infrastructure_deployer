@@ -1,0 +1,65 @@
+{
+  "deployment":{
+    "type":"distributed",
+    "default_provider":"openstack",
+    "ansible_limit": ["all"],
+    "ansible_tags": ["all"]
+  },
+  "infrastructure":{
+    "aws": {
+      "access_key_id": "YOUR_IAM_USER_ACCESS_KEY_ID",
+      "secret_access_key": "YOUR_IAM_USER_SECRECT_ACCESS_KEY"
+    },
+    "openstack": {
+      "identity_api_version":"3",
+      "auth_url":"https://cscloud.cf.ac.uk:5000/v3",
+      "region_name":"regionone",
+      "interface":"public",
+      "project_name":"YOUR_PROJECT_NAME",
+      "project_domain_name":"cs.cf.ac.uk",
+      "username":"YOUR_USERNAME",
+      "user_domain_name":"cs.cf.ac.uk",
+      "password":"PASSWORD",
+      "network_url": "https://cscloud.cf.ac.uk:9696/v2.0/networks"
+    }
+  },
+  "software": {
+    "cordra": {
+      "admin_password":"PASSWORD",
+      "users": [
+        {"username":"francisco","password": "PASSWORD"},
+        {"username":"alex","password": "PASSWORD"}
+      ]
+    },
+    "elasticserch": {
+      "admin_password":"PASSWORD"
+    },
+    "mongodb": {
+      "admin_password":"PASSWORD",
+      "cordra_password":"PASSWORD"
+    },
+    "grafana": {
+      "admin_password":"PASSWORD",
+      "smtp": {
+        "host": "smtp.gmail.com:465",
+        "user": "EMAIL_USER",
+        "password": "EMAIL_PASSWORD"
+      },
+      "notification_email_address": "YOUR_DESIRED_EMAIL_ADDRESS_TO_RECEIVE_ALERTS"
+    },
+    "prometheus": {
+      "admin_password":"PASSWORD"
+    }
+  },
+  "keys": {
+    "public_key": "ssh-rsa XXXX",
+    "private_key": [
+      "-----BEGIN RSA PRIVATE KEY-----",
+      "XXXX",
+      "XXXX",
+      "XXXX",
+      "XXXX",
+      "-----END RSA PRIVATE KEY-----"
+    ]
+  }
+}

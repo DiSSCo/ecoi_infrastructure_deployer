@@ -1,0 +1,25 @@
+---
+- name: Configure network on {{ inventory_hostname }}
+  block:
+
+    - name: Open ports on {{ inventory_hostname }}
+      ufw:
+        state: enabled
+        rule: allow
+        proto: tcp
+        from_ip: any
+        to_ip: any
+        port : '{{ item }}'
+      with_items:
+        - "{{logstash.http_port}}"
+        - "{{logstash.beat_port}}"
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Configure network on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Configure network FINISHED on {{ inventory_hostname }}"
+  tags: ["configure_network"]

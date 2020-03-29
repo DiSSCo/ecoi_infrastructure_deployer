@@ -1,0 +1,17 @@
+- name: Setting up server with Nginx on {{ inventory_hostname }}
+  block:
+    - import_tasks: 01-prepare_required_packages.yml
+      tags: [prepare_packages]
+
+    - import_tasks: 02-configure_network.yml
+      tags: [configure_network]
+
+    - import_tasks: 03-setup_nginx.yml
+      tags: [setup_nginx]
+
+  rescue:
+    - debug:
+        msg: "ERROR in Setting up server with Nginx on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setting up server with Nginx FINISHED on {{ inventory_hostname }}"

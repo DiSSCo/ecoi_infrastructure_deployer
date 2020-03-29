@@ -1,0 +1,33 @@
+---
+- name: Setup Nginx
+  block:
+    - name: Install nginx
+      apt:
+        name: "{{packages}}"
+        state: present
+      vars:
+        packages:
+          - nginx
+          - ssl-cert
+      register: nginx_installed
+
+    - name: Configure nginx
+      template:
+        src: "nginx/default.j2"
+        dest: "/etc/nginx/sites-available/default"
+      when: nginx_installed.changed
+
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: restarted
+      when: nginx_installed.changed
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Nginx"
+  always:
+    - debug:
+        msg: "Setup Nginx FINISHED"

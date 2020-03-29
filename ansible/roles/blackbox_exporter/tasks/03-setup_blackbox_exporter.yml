@@ -1,0 +1,62 @@
+---
+- name: Setup Blackbox exporter on {{ inventory_hostname }}
+  block:
+    - name: Save blackbox_exporter user credentials in passwdfile
+      htpasswd:
+        path: "{{ server.apps_dir + '/certs/passwdfile' }}"
+        name: blackbox_exporter
+        password: "{{ blackbox_exporter.admin_password }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+        mode: 0644
+
+    # Download Blackbox_exporter distribution and unzip in /opt as zip has folder blackbox_exporter-x.x.x
+    - name: Download and unarchive blackbox_exporter on {{ inventory_hostname }}
+      unarchive:
+        src: "{{ blackbox_exporter.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ blackbox_exporter.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: blackbox_exporter_download
+
+    - name: Create simbolic link between blackbox_exporter-x.x.x and blackbox_exporter directory on {{ inventory_hostname }}
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'blackbox_exporter-*' -exec ln -s {} "{{ blackbox_exporter.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ blackbox_exporter.dir }}"
+      when: blackbox_exporter_download.changed
+
+    - name: Configure Blackbox exporter
+      template:
+        src: "blackbox_exporter/blackbox.yml.j2"
+        dest: "{{ blackbox_exporter.dir + '/blackbox.yml'}}"
+      when: blackbox_exporter_download.changed
+
+    - name: Start blackbox_exporter on {{ inventory_hostname }}
+      shell:
+        cmd: nohup ./blackbox_exporter --config.file=./blackbox.yml --web.listen-address='127.0.0.1:{{ blackbox_exporter.http_internal_port }}' >> ./blackbox_exporter.log 2>&1 &
+        chdir: "{{ blackbox_exporter.dir }}"
+      become_user: "{{ server.user }}"
+      when: blackbox_exporter_download.changed
+
+    - name: Wait for blackbox_exporter http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
+      wait_for:
+        port: "{{ blackbox_exporter.http_internal_port }}"
+        delay: 5
+        timeout: 300
+        state: started
+        msg: "Blackbox exporter HTTP PORT is not Listening"
+      when: blackbox_exporter_download.changed
+      register: blackbox_exporter_up
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Blackbox exporter on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setup Blackbox exporter FINISHED on {{ inventory_hostname }}"
+  tags: ["install_software"]

@@ -1,0 +1,22 @@
+[
+  {
+    "type": "Document",
+    "attributes": {
+      "content": {
+        "name": "testA",
+        "description": "This is a test of creating a new document with DOIP"
+      }
+    },
+    "elements": []
+  },
+  {
+    "type": "Document",
+    "attributes": {
+      "content": {
+        "name": "testB",
+        "description": "This is another test of creating a new document with DOIP"
+      }
+    },
+    "elements": []
+  }
+]

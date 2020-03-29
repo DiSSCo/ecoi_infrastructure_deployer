@@ -1,0 +1,59 @@
+---
+- name: Setup Kibana on {{ inventory_hostname }}
+  block:
+    # Download Kibana distribution and unzip in /opt as zip has folder kibana-x.x.x
+    - name: Download and unarchive Kibana on {{ inventory_hostname }}
+      unarchive:
+        src: "{{ kibana.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ kibana.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: kibana_download
+
+    - name: Fix permissions to kibana dir on {{ inventory_hostname }}
+      shell:
+        cmd: chown -R "{{ server.user }}":"{{ server.group }}" "{{ kibana.dir }}"-*
+        warn: false
+      when: kibana_download.changed
+
+    - name: Create simbolic link between kibana-x.x.x and kibana directory on {{ inventory_hostname }}
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'kibana-*' -exec ln -s {} "{{ kibana.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ kibana.dir }}"
+      when: kibana_download.changed
+
+    - name: Config Kibana installation on {{ inventory_hostname }}
+      template:
+        src: "kibana/kibana.yml.j2"
+        dest: "{{ kibana.dir + '/config/kibana.yml'}}"
+      when: kibana_download.changed
+
+    - name: Start Kibana on {{ inventory_hostname }}
+      shell:
+        cmd: nohup ./bin/kibana >> kibana.log 2>&1 &
+        chdir: "{{ kibana.dir }}"
+      become_user: "{{ server.user }}"
+      when: kibana_download.changed
+
+    - name: Wait for Kibana http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
+      wait_for:
+        port: "{{ kibana.http_port }}"
+        delay: 5
+        timeout: 300
+        state: started
+        msg: "Kibana HTTP PORT is not Listening"
+      when: kibana_download.changed
+      register: kibana_up
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Kibana on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setup Kibana FINISHED on {{ inventory_hostname }}"
+  tags: ["install_software"]

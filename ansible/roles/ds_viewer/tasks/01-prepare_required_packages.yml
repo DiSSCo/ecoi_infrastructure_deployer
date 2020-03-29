@@ -1,0 +1,143 @@
+---
+- name: Preparing required packages on {{ inventory_hostname }}
+  block:
+    - name: Install required package dependencies on {{ inventory_hostname }}
+      apt:
+        name: "{{packages}}"
+        state: present
+      vars:
+        packages:
+          - unzip
+          - apt-transport-https
+          - libcurl4
+          - openssl
+          - git-core
+          - curl
+          - zlib1g-dev
+          - build-essential
+          - libssl-dev
+          - libreadline-dev
+          - libyaml-dev
+          - libxml2-dev
+          - libxslt1-dev
+          - libcurl4-openssl-dev
+          - software-properties-common
+          - libffi-dev
+          - dirmngr
+          - gnupg
+          - apt-transport-https
+          - ca-certificates
+          - redis-server
+          - redis-tools
+          - git               #to download portal source code
+          - python-mysqldb    #required for ansible mysql modules
+          - sqlite3 # app defaults to sqlite3 even if no db is used
+          - libsqlite3-dev # required for bundle install to succeed
+          - libmysqlclient-dev #required to connect to mysql databases
+          - mysql-client #usefule to connect to mysql from command line
+
+    - name: Add Yarn apt key  on {{ inventory_hostname }}
+      apt_key:
+        url: https://dl.yarnpkg.com/debian/pubkey.gpg
+
+    - name: Add Yarn repository on {{ inventory_hostname }}
+      apt_repository:
+        repo: "deb https://dl.yarnpkg.com/debian/ stable main"
+        filename: yarn
+
+    - name: Install Yarn on {{ inventory_hostname }}
+      apt:
+        name: yarn
+
+    - name: Ansible check ruby exists.
+      stat:
+        path: "{{ ruby.rbenv_root }}"
+      register: rbenv_dir
+
+    - name: "get rbenv from github"
+      git:
+        repo: https://github.com/rbenv/rbenv.git
+        dest: '{{ ruby.rbenv_root }}'
+      when: not rbenv_dir.stat.exists
+
+    - name: "get rbenv build from github"
+      git:
+        repo: https://github.com/rbenv/ruby-build.git
+        dest: '{{ ruby.rbenv_root }}/plugins/ruby-build'
+      when: not rbenv_dir.stat.exists
+
+    - name: "get rbenv vars from github"
+      git:
+        repo: https://github.com/rbenv/rbenv-vars.git
+        dest: '{{ ruby.rbenv_root }}/plugins/rbenv-vars'
+      when: not rbenv_dir.stat.exists
+
+    - name: "Recursively change ownership of .rbenv directory"
+      file:
+        path: '{{ ruby.rbenv_root }}'
+        state: directory
+        recurse: yes
+        owner: "{{ server.user }}"
+        group: "{{ server.user }}"
+      when: not rbenv_dir.stat.exists
+
+    - name: "add PATH variable to bashrc"
+      lineinfile:
+        path: "{{ bashrc }}"
+        line: 'export PATH="{{ ruby.rbenv_root }}/bin:{{ ruby.rbenv_root }}/plugins/ruby-build/bin:$PATH"'
+        regexp: ".rbenv/bin"
+      when: not rbenv_dir.stat.exists
+
+    - name: "add eval to bashrc"
+      lineinfile:
+        path: "{{ bashrc }}"
+        line: 'eval "$(rbenv init -)"'
+        regexp: "rbenv init -"
+      when: not rbenv_dir.stat.exists
+
+    - name: Copy rbenvInit script on {{ inventory_hostname }}
+      template:
+        src: ruby/rbenvInit.sh.j2
+        dest: "{{ server.apps_dir + '/rbenvInit.sh' }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+        mode: a+x
+      when: not rbenv_dir.stat.exists
+
+    - name: "Install ruby {{ ruby.ruby_version }} using rbenv on {{ inventory_hostname }}"
+      shell: "{{ server.apps_dir}}/rbenvInit.sh rbenv install {{ ruby.ruby_version }}"
+      environment:
+        CONFIGURE_OPTS: "--disable-install-doc"
+      become_user: "{{ server.user }}"
+      when: not rbenv_dir.stat.exists
+
+    - name: "set ruby {{ ruby.ruby_version }} as global on {{ inventory_hostname }}"
+      command: "{{ server.apps_dir}}/rbenvInit.sh rbenv global {{ ruby.ruby_version }}"
+      become_user: "{{ server.user }}"
+      when: not rbenv_dir.stat.exists
+
+    - name: "install bundler gem"
+      command: "{{ server.apps_dir}}/rbenvInit.sh gem install bundler on {{ inventory_hostname }}"
+      become_user: "{{ server.user }}"
+      when: not rbenv_dir.stat.exists
+
+    - name: "install rails {{ ruby.rails_version }} on {{ inventory_hostname }}"
+      command: "{{ server.apps_dir}}/rbenvInit.sh gem install rails -v {{ ruby.rails_version|quote }}"
+      become_user: "{{ server.user }}"
+      when: not rbenv_dir.stat.exists
+
+    - name: "rbenv rehash"
+      command: "{{ server.apps_dir}}/rbenvInit.sh rbenv rehash on {{ inventory_hostname }}"
+      become_user: "{{ server.user }}"
+      when: not rbenv_dir.stat.exists
+
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Prepare required packages on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Prepare required packages FINISHED on {{ inventory_hostname }}"
+  tags: ["prepare_packages"]

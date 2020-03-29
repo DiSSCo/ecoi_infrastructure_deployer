@@ -1,0 +1,82 @@
+---
+- name: Setup Elasticsearch on {{ inventory_hostname }}
+  block:
+    # Download Elasticsearch distribution and unzip in /opt as zip has folder elasticsearch-x.x.x
+    - name: Download and unarchive Elasticsearch on {{ inventory_hostname }}
+      unarchive:
+        src: "{{ elasticsearch.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ elasticsearch.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: elasticsearch_download
+
+    - name: Create simbolic link between elasticsearch-x.x.x and elasticsearch directory on {{ inventory_hostname }}
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'elasticsearch-*' -exec ln -s {} "{{ elasticsearch.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ elasticsearch.dir }}"
+      when: elasticsearch_download.changed
+
+    - name: Configure Elasticsearch on {{ inventory_hostname }}
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      with_items:
+        - { src: 'elasticsearch/elasticsearch.yml.j2', dest: '{{ elasticsearch.dir + "/config/elasticsearch.yml" }}' }
+        - { src: 'elasticsearch/password-tmp.txt.j2', dest: '{{ elasticsearch.dir + "/config/password-tmp.txt" }}' }
+      when: elasticsearch_download.changed
+
+    - name: Setup elasticsearch password on {{ inventory_hostname }}
+      shell:
+        cmd: "{{ item }}"
+        chdir: "{{ elasticsearch.dir }}"
+        warn: false
+      become_user: "{{ server.user }}"
+      with_items:
+          - "./bin/elasticsearch-keystore create"
+          - "cat ./config/password-tmp.txt | ./bin/elasticsearch-keystore add --stdin bootstrap.password"
+          - "rm ./config/password-tmp.txt"
+      when: elasticsearch_download.changed
+
+    - name: Copy server cert files to elasticsearch/config on {{ inventory_hostname }}
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+        force: yes
+        remote_src: yes
+      with_items:
+        - { src: '{{ server.apps_dir + "/certs/server.crt" }}', dest: '{{ elasticsearch.dir + "/config/server.crt" }}' }
+        - { src: '{{ server.apps_dir + "/certs/server.key" }}', dest: '{{ elasticsearch.dir + "/config/server.key" }}' }
+
+    - name: Start Elasticsearch on {{ inventory_hostname }}
+      shell:
+        cmd: nohup ./bin/elasticsearch -p elasticsearch.pid >> ./elasticsearch.log 2>&1 &
+        chdir: "{{ elasticsearch.dir }}"
+      become_user: "{{ server.user }}"
+      when: elasticsearch_download.changed
+
+    - name: Wait for Elasticsearch http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
+      wait_for:
+        port: "{{ elasticsearch.http_port }}"
+        delay: 5
+        timeout: 300
+        state: started
+        msg: "Elasticsearch HTTP PORT is not Listening"
+      when: elasticsearch_download.changed
+      register: elasticsearch_up
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Elasticsearch on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setup Elasticsearch FINISHED on {{ inventory_hostname }}"
+  tags: ["install_software"]

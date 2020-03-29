@@ -1,0 +1,19 @@
+---
+
+instance_type: "{{ inventory_hostname }}"
+
+java_home: /usr/lib/jvm/java-8-openjdk-amd64
+
+os_environment_variables:
+  - key: CORDRADIR
+    value : "{{ cordra.dir }}"
+  - key: ES_HOME
+    value : "{{ elasticsearch.dir }}"
+  - key: LS_HOME
+    value : "{{ logstash.dir }}"
+  - key: KIBANA_HOME
+    value : "{{ kibana.dir }}"
+  - key: GRAFANA_HOME
+    value : "{{ grafana.dir }}"
+  - key: JAVA_HOME
+    value: "{{ java_home }}"

@@ -1,0 +1,62 @@
+---
+- name: Setup Prometheus on {{ inventory_hostname }}
+  block:
+    - name: Save prometheus user credentials in passwdfile on {{ inventory_hostname }}
+      htpasswd:
+        path: "{{ server.apps_dir + '/certs/passwdfile' }}"
+        name: prometheus
+        password: "{{ prometheus.admin_password }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+        mode: 0644
+
+    # Download Prometheus distribution and unzip in /opt as zip has folder prometheus-x.x.x
+    - name: Download and unarchive prometheus on {{ inventory_hostname }}
+      unarchive:
+        src: "{{ prometheus.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ prometheus.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: prometheus_download
+
+    - name: Create simbolic link between prometheus-x.x.x and prometheus directory on {{ inventory_hostname }}
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'prometheus-*' -exec ln -s {} "{{ prometheus.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ prometheus.dir }}"
+      when: prometheus_download.changed
+
+    - name: Configure Prometheus prometheus.yml on {{ inventory_hostname }}
+      template:
+        src: "prometheus/prometheus.yml.j2"
+        dest: "{{ prometheus.dir + '/prometheus.yml'}}"
+      when: prometheus_download.changed
+
+    - name: Start Prometheus on {{ inventory_hostname }}
+      shell:
+        cmd: nohup ./prometheus --config.file ./prometheus.yml --web.console.templates ./consoles --web.console.libraries ./console_libraries --web.listen-address='127.0.0.1:{{ prometheus.http_internal_port }}' >> ./prometheus.log 2>&1 &
+        chdir: "{{ prometheus.dir }}"
+      become_user: "{{ server.user }}"
+      when: prometheus_download.changed
+
+    - name: Wait for prometheus http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
+      wait_for:
+        port: "{{ prometheus.http_internal_port }}"
+        delay: 5
+        timeout: 300
+        state: started
+        msg: "Prometheus HTTP PORT is not Listening"
+      when: prometheus_download.changed
+      register: prometheus_download_up
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Prometheus on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setup Prometheus FINISHED on {{ inventory_hostname }}"
+  tags: ["install_software"]

@@ -1,0 +1,42 @@
+---
+- name: Setup Nginx on {{ inventory_hostname }}
+  block:
+    - name: Install nginx on {{ inventory_hostname }}
+      apt:
+        name: "{{packages}}"
+        state: present
+      vars:
+        packages:
+          - nginx
+      register: nginx_installed
+
+    - name: Remove Nginx default site on {{ inventory_hostname }}
+      file:
+        path: "{{ nginx_path }}/sites-enabled/default"
+        state: absent
+      when: nginx_installed.changed
+
+    - name: Configure nginx site-available on {{ inventory_hostname }}
+      template:
+        src: "nginx/{{ item.key }}.j2"
+        dest: "{{ nginx_path }}/sites-available/{{ item.key }}"
+        force: no
+      with_dict: "{{ sites }}"
+
+    - name: Configure nginx site-enabled on {{ inventory_hostname }}
+      file:
+        src: "{{ nginx_path }}/sites-available/{{ item.key }}"
+        dest: "{{ nginx_path }}/sites-enabled/{{ item.key }}"
+        state: link
+      with_dict: "{{ sites }}"
+      notify: restart nginx
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Nginx on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setup Nginx FINISHED on {{ inventory_hostname }}"
+  tags: ["install_software"]

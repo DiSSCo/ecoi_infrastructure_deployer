@@ -1,0 +1,14 @@
+{
+	"name": "Prometheus",
+	"type": "prometheus",
+	"url": "https://{{ prometheus.host_ip }}:{{ prometheus.http_port }}",
+	"access": "proxy",
+	"basicAuth": true,
+	"basicAuthUser": "prometheus",
+	"secureJsonData": {
+		"basicAuthPassword": "{{ prometheus.admin_password }}"
+	},
+	"jsonData": {
+		"tlsSkipVerify": true
+	}
+}

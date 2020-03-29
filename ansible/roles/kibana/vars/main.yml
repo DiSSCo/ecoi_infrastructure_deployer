@@ -1,0 +1,6 @@
+---
+# variables associated with this role
+
+os_environment_variables:
+  - key: KIBANA_HOME
+    value : "{{ kibana.dir }}"

@@ -1,0 +1,28 @@
+---
+- name: Configure startup programs on {{ inventory_hostname }}
+  block:
+    - name: Config Node Exporter service on {{ inventory_hostname }}
+      template:
+        src: systemd/node_exporter.service.j2
+        dest: /etc/systemd/system/node_exporter.service
+      register: node_exporter_service
+
+    - name: Force systemd to reload configs on {{ inventory_hostname }}
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable Node Exporter service on {{ inventory_hostname }}
+      systemd:
+        name: node_exporter.service
+        enabled: yes
+      when: node_exporter_service.changed
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Configure startup programs on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Configure startup programs FINISHED on {{ inventory_hostname }}"
+  tags: ["startup_programs"]

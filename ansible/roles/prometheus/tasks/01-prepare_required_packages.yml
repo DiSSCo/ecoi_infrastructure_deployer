@@ -1,0 +1,20 @@
+---
+- name: Preparing required packages on {{ inventory_hostname }}
+  block:
+    - name: Install required package dependencies on {{ inventory_hostname }}
+      apt:
+        name: "{{packages}}"
+        state: present
+      vars:
+        packages:
+          - unzip
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Prepare required packages on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Prepare required packages FINISHED on {{ inventory_hostname }}"
+  tags: ["prepare_packages"]

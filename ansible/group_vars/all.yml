@@ -1,0 +1,126 @@
+---
+# assign variables to all the groups
+
+# Variables server_user and conf (json) should be provided as extra-vars when running ansible
+server:
+  apps_dir: /opt
+  user: "{{ server_user }}"
+  group: "{{ server_user }}"
+  conf: "{{ config }} "
+
+cordra:
+  dir: "{{ server.apps_dir + '/cordra' }}"
+  #distribution_url: https://www.cordra.org/assets/sw/cordra-2.0.0-beta.20190612-distribution.zip
+  #distribution_url: https://www.cordra.org/assets/sw/cordra-2.0.0-distribution.zip
+  distribution_url: https://cardiff-cordra-distributions.s3.eu-west-2.amazonaws.com/cordra-2.0.0-distribution-fran.zip
+  admin_password: "{{ server.conf.cordra.admin_password }}"
+  http_port: 80
+  http_internal_port: 8080
+  https_port: 443
+  https_internal_port: 8443
+  handleServer_port: 2641
+  doip_port: 9000
+  handleServer_enabled: false
+  doec_library_url: https://cardiff-cordra-distributions.s3.eu-west-2.amazonaws.com/doec-1.0.0-jar-with-dependencies.jar
+
+  cordra_nsidr_server:
+    handle_prefix: "vagrant.994"
+    host_ip: "{{ hostvars['cordra_nsidr_server']['ansible_host'] }}"
+    handleServer_host: "{{ hostvars['cordra_nsidr_server']['ansible_host'] }}"
+    #base_uri: "https://{{ hostvars['cordra_nsidr_server']['ansible_host'] + '/' }}"
+    base_uri: ""
+    index_name: "cordra_nsidr"
+    db_name: "cordra-nsidr"
+    initial_users: "{{ server.conf.cordra.users }}"
+
+  cordra_prov_server:
+    handle_prefix: "vagrant_prov.994"
+    host_ip: "{{ hostvars['cordra_prov_server']['ansible_host'] }}"
+    handleServer_host: "{{ hostvars['cordra_prov_server']['ansible_host'] }}"
+    #base_uri: "https://{{ hostvars['cordra_prov_server']['ansible_host'] + '/' }}"
+    base_uri: ""
+    index_name: "cordra_prov"
+    db_name: "cordra-prov"
+    initial_users: []
+
+mongodb:
+  dir: "{{ server.apps_dir + '/mongodb'}}"
+  distribution_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu1804-4.2.3.tgz
+  host_ip: "{{ hostvars[groups['db_servers'][0]]['ansible_host'] }}"
+  port: 27017
+  admin_password: "{{ server.conf.mongodb.admin_password }}"
+  cordra_password: "{{ server.conf.mongodb.cordra_password }}"
+  cordra_db_name: "{{ cordra.cordra_nsidr_server.db_name }}"
+  cordra_prov_db_name: "{{ cordra.cordra_prov_server.db_name }}"
+
+
+elk_version: 7.6.0
+
+elasticsearch:
+  dir: "{{ server.apps_dir + '/elasticsearch'}}"
+  distribution_url: https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-{{ elk_version }}-linux-x86_64.tar.gz
+  cluster_name: nsidr
+  node_name: node-1
+  address_scheme: "https"
+  host_ip: "{{ hostvars[groups['search_engine_servers'][0]]['ansible_host'] }}"
+  http_port: 9200
+  transport_port: 9300
+  index_mapping_total_fields_limits: 100000
+  elastic_user: "elastic"
+  elastic_password: "{{ server.conf.elasticserch.admin_password }}"
+
+logstash:
+  dir: "{{ server.apps_dir + '/logstash'}}"
+  distribution_url: https://artifacts.elastic.co/downloads/logstash/logstash-{{ elk_version }}.tar.gz
+  host_ip: "{{ hostvars[groups['search_engine_servers'][0]]['ansible_host'] }}"
+  http_port: 9600
+  beat_port: 5044
+
+filebeat:
+  dir: "{{ server.apps_dir + '/filebeat'}}"
+  distribution_url: https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-{{ elk_version }}-linux-x86_64.tar.gz
+  app_source: "cordra_log"
+
+kibana:
+  dir: "{{ server.apps_dir + '/kibana'}}"
+  distribution_url: https://artifacts.elastic.co/downloads/kibana/kibana-{{ elk_version }}-linux-x86_64.tar.gz
+  host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
+  http_port: 5601
+
+prometheus:
+  dir: "{{ server.apps_dir + '/prometheus' }}"
+  distribution_url: https://github.com/prometheus/prometheus/releases/download/v2.15.2/prometheus-2.15.2.linux-amd64.tar.gz
+  host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
+  http_port: 9090
+  http_internal_port: 9091
+  admin_password: "{{ server.conf.prometheus.admin_password }}"
+
+node_exporter:
+  dir: "{{ server.apps_dir + '/node_exporter' }}"
+  distribution_url: https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-0.18.1.linux-amd64.tar.gz
+  http_port: 9100
+  http_internal_port: 9101
+  admin_password: "{{ server.conf.prometheus.admin_password }}"
+
+blackbox_exporter:
+  dir: "{{ server.apps_dir + '/blackbox_exporter' }}"
+  distribution_url: https://github.com/prometheus/blackbox_exporter/releases/download/v0.16.0/blackbox_exporter-0.16.0.linux-amd64.tar.gz
+  host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
+  http_port: 9115
+  http_internal_port: 9116
+  admin_password: "{{ server.conf.prometheus.admin_password }}"
+
+grafana:
+  dir: "{{ server.apps_dir + '/grafana' }}"
+  distribution_url: https://dl.grafana.com/oss/release/grafana-6.6.0.linux-amd64.tar.gz
+  host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
+  http_port: 3000
+  admin_password: "{{ server.conf.grafana.admin_password }}"
+  smtp: "{{ server.conf.grafana.smtp }}"
+  notification_email_address: "{{ server.conf.grafana.notification_email_address }}"
+
+ds_viewer:
+  dir: "{{ server.apps_dir + '/dsviewer' }}"
+  distribution_url: https://github.com/scman1/dsviewer.git
+  host_ip: "{{ hostvars[groups['ds_viewer_servers'][0]]['ansible_host'] }}"
+  http_port: 3000

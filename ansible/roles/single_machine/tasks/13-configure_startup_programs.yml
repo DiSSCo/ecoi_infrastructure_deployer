@@ -1,0 +1,136 @@
+---
+- name: Configure startup programs
+  block:
+
+    - name: Config Node Exporter service
+      template:
+        src: systemd/node_exporter.service.j2
+        dest: /etc/systemd/system/node_exporter.service
+      register: node_exporter_service
+
+    - name: Config Blackbox Exporter service
+      template:
+        src: systemd/blackbox_exporter.service.j2
+        dest: /etc/systemd/system/blackbox_exporter.service
+      register: blackbox_exporter_service
+
+    - name: Config Prometheus service
+      template:
+        src: systemd/prometheus.service.j2
+        dest: /etc/systemd/system/prometheus.service
+      register: prometheus_service
+
+    - name: Config Elasticsearch service
+      template:
+        src: systemd/elasticsearch.service.j2
+        dest: /etc/systemd/system/elasticsearch.service
+      register: elasticsearch_service
+
+    - name: Config Logstash service
+      template:
+        src: systemd/logstash.service.j2
+        dest: /etc/systemd/system/logstash.service
+      register: logstash_service
+
+    - name: Config Filebeat service
+      template:
+        src: systemd/filebeat.service.j2
+        dest: /etc/systemd/system/filebeat.service
+      register: filebeat_service
+
+    - name: Config Mongodb service
+      template:
+        src: systemd/mongodb.service.j2
+        dest: /etc/systemd/system/mongodb.service
+      register: mongodb_service
+
+    - name: Config Cordra service
+      template:
+        src: systemd/cordra.service.j2
+        dest: /etc/systemd/system/cordra.service
+      register: cordra_service
+
+    - name: Config Kibana service
+      template:
+        src: systemd/kibana.service.j2
+        dest: /etc/systemd/system/kibana.service
+      register: kibana_service
+
+    - name: Config Grafana service
+      template:
+        src: systemd/grafana.service.j2
+        dest: /etc/systemd/system/grafana.service
+      register: grafana_service
+
+    - name: Force systemd to reload configs
+      systemd:
+        daemon_reload: yes
+
+    - name: Enable Node Exporter service
+      systemd:
+        name: node_exporter.service
+        enabled: yes
+      when: node_exporter_service.changed
+
+    - name: Enable Blackbox Exporter service
+      systemd:
+        name: blackbox_exporter.service
+        enabled: yes
+      when: blackbox_exporter_service.changed
+
+    - name: Enable Prometheus service
+      systemd:
+        name: prometheus.service
+        enabled: yes
+      when: prometheus_service.changed
+
+    - name: Enable Elasticsearch service
+      systemd:
+        name: elasticsearch.service
+        enabled: yes
+      when: elasticsearch_service.changed
+
+    - name: Enable Logstash service
+      systemd:
+        name: logstash.service
+        enabled: yes
+      when: logstash_service.changed
+
+    - name: Enable Filebeat service
+      systemd:
+        name: filebeat.service
+        enabled: yes
+      when: filebeat_service.changed
+
+    - name: Enable Mongodb service
+      systemd:
+        name: mongodb.service
+        enabled: yes
+      when: mongodb_service.changed
+
+    - name: Enable Cordra service
+      systemd:
+        name: cordra.service
+        enabled: yes
+      when: cordra_service.changed
+
+    - name: Enable Kibana service
+      systemd:
+        name: kibana.service
+        enabled: yes
+      when: kibana_service.changed
+
+    - name: Enable Grafana service
+      systemd:
+        name: grafana.service
+        enabled: yes
+      when: grafana_service.changed
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Configure startup programs"
+  always:
+    - debug:
+        msg: "Configure startup programs FINISHED"

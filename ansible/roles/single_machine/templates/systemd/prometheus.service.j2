@@ -1,0 +1,16 @@
+[Unit]
+Description=Prometheus
+Wants=network.target
+After=node_exporter.service blackbox_exporter.service
+
+[Service]
+Type=simple
+WorkingDirectory={{ prometheus.dir }}
+ExecStart={{ prometheus.dir }}/prometheus --config.file {{ prometheus.dir }}/prometheus.yml --web.console.templates {{ prometheus.dir }}/consoles --web.console.libraries {{ prometheus.dir }}/console_libraries
+ExecStartPost={{ server.apps_dir}}/check_port.sh {{ prometheus.http_port }} 60 5
+User={{ server.user }}
+PermissionsStartOnly=true
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

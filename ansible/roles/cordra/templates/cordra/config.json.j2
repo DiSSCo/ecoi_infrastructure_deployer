@@ -1,0 +1,50 @@
+{
+  "httpPort": "{{ cordra.http_internal_port }}",
+  "httpsPort": "{{ cordra.https_internal_port }}",
+  "listenAddress": "0.0.0.0",
+  "doip": {
+    "enabled": true,
+    "port": "{{ cordra.doip_port }}",
+    "processorConfig": {
+      "serviceId": "{{ cordra[instance_type].handle_prefix }}/service"
+    }
+  },
+  "storage" : {
+    "module" : "mongodb",
+    "options" : {
+        "connectionUri": "mongodb://cordra:{{ mongodb.cordra_password }}@{{ mongodb.host_ip }}:{{ mongodb.port }}/{{ cordra[instance_type].db_name }}?authSource={{ cordra[instance_type].db_name }}",
+        "databaseName": "{{ cordra[instance_type].db_name }}",
+        "collectionName": "cordra",
+        "gridFsBucketName": "fs"
+    }
+  },
+  "index" : {
+    "module" : "elasticsearch",
+    "options" : {
+      "address": "{{ elasticsearch.host_ip }}",
+      "port": "{{ elasticsearch.http_port }}",
+      "addressScheme" : "{{ elasticsearch.address_scheme }}",
+      "username": "elastic",
+      "password": "{{ elasticsearch.elastic_password }}",
+      "indexName": "{{ cordra[instance_type].index_name }}",
+      "index.mapping.total_fields.limit": "{{ elasticsearch.index_mapping_total_fields_limits }}",
+      "mappings": "{
+          'properties': {
+            'metadata/createdOn': {
+              'type': 'date',
+              'format': 'epoch_millis'
+            },
+            'metadata/publishedOn': {
+              'type': 'date',
+              'format': 'epoch_millis'
+            },
+            'metadata/modifiedOn': {
+                'type': 'date',
+                'format': 'epoch_millis'
+            }
+          }
+      }"
+    }
+  }
+}
+

@@ -1,0 +1,23 @@
+server {
+        {% if item.value.ssl_enabled %}
+            listen {{ item.value.external_port }} ssl;
+            listen [::]:{{ item.value.external_port }} ssl http2;
+
+            ssl_certificate {{ server.apps_dir + '/certs/server.crt' }};
+            ssl_certificate_key {{ server.apps_dir + '/certs/server.key' }};
+
+            location / {
+               auth_basic           "{{ item.key }}";
+               auth_basic_user_file {{ server.apps_dir + '/certs/passwdfile' }};
+
+               proxy_pass {{ item.value.internal_protocol }}://127.0.0.1:{{ item.value.internal_port }}/;
+            }
+        {% else %}
+            listen {{ item.value.external_port }};
+            listen [::]:{{ item.value.external_port }};
+
+            location / {
+                proxy_pass {{ item.value.internal_protocol }}://127.0.0.1:{{ item.value.internal_port }}/;
+            }
+        {% endif %}
+}

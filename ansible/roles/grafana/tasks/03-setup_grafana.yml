@@ -1,0 +1,81 @@
+---
+- name: Setup Grafana on {{ inventory_hostname }}
+  block:
+    # Download Grafana distribution and unzip in /opt as zip has folder grafana-x.x.x
+    - name: Download and unarchive Grafana on {{ inventory_hostname }}
+      unarchive:
+        src: "{{ grafana.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ grafana.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: grafana_download
+
+    - name: Fix permissions to grafana dir on {{ inventory_hostname }}
+      shell:
+        cmd: chown -R "{{ server.user }}":"{{ server.group }}" "{{ grafana.dir }}"-*
+        warn: false
+      when: grafana_download.changed
+
+    - name: Create simbolic link between grafana-x.x.x and grafana directory on {{ inventory_hostname }}
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'grafana-*' -exec ln -s {} "{{ grafana.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ grafana.dir }}"
+      when: grafana_download.changed
+
+    - name: Config Grafana installation on {{ inventory_hostname }}
+      template:
+        src: "grafana/grafana.ini.j2"
+        dest: "{{ grafana.dir + '/conf/grafana.ini'}}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      when: grafana_download.changed
+
+    - name: Start Grafana using config file on {{ inventory_hostname }}
+      shell:
+        cmd: nohup ./bin/grafana-server --config ./conf/grafana.ini >> ./grafana.log 2>&1 &
+        chdir: "{{ grafana.dir }}"
+      become_user: "{{ server.user }}"
+      when: grafana_download.changed
+
+    - name: Wait for Grafana http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
+      wait_for:
+        port: "{{ grafana.http_port }}"
+        delay: 5
+        timeout: 300
+        state: started
+        msg: "Grafana HTTP PORT is not Listening"
+      when: grafana_download.changed
+      register: grafana_up
+
+    - name: Create datasources, dashboards and alerts
+      uri:
+        url: "{{ 'https://' + grafana.host_ip + ':' + grafana.http_port|string + item.url }}"
+        validate_certs: no
+        user: "admin"
+        password: "{{ grafana.admin_password }}"
+        method: POST
+        body: "{{ item.body }}"
+        force_basic_auth: yes
+        body_format: json
+      with_items:
+        - { body: '{{ lookup("template","grafana/datasources/prometheus.json.j2") }}', url: '{{ "/api/datasources" }}' }
+        - { body: '{{ lookup("template","grafana/datasources/elasticsearch_cordra_nsidr.json.j2") }}', url: '{{ "/api/datasources" }}' }
+        - { body: '{{ lookup("template","grafana/datasources/cordra_nsidr_logstash_filebeat.json.j2") }}', url: '{{ "/api/datasources" }}' }
+        - { body: '{{ lookup("template","grafana/datasources/elasticsearch_cordra_prov.json.j2") }}', url: '{{ "/api/datasources" }}' }
+        - { body: '{{ lookup("template","grafana/datasources/cordra_prov_logstash_filebeat.json.j2") }}', url: '{{ "/api/datasources" }}' }
+        - { body: '{{ lookup("template","grafana/notification_channels/ecoi_notification_channel.json.json.j2") }}', url: '{{ "/api/alert-notifications" }}' }
+        - { body: '{{ lookup("template","grafana/dashboards/cordra_nsidr_ds.json.j2") }}', url: '{{ "/api/dashboards/db" }}' }
+        - { body: '{{ lookup("template","grafana/dashboards/ecoi_systemd_services.json.j2") }}', url: '{{ "/api/dashboards/db" }}' }
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Grafana on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setup Grafana FINISHED on {{ inventory_hostname }}"
+  tags: ["install_software"]

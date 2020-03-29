@@ -1,0 +1,8 @@
+---
+# handlers file
+- name: restart nginx
+  service:
+    name: nginx
+    state: restarted
+  become: true
+  become_user: root

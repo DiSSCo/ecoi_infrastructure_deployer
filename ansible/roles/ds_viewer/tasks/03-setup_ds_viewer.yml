@@ -1,0 +1,88 @@
+---
+- name: Setup DS Viewer on {{ inventory_hostname }}
+  block:
+    - name: Ansible check ds_viewer application exists on {{ inventory_hostname }}
+      stat:
+        path: "{{ ds_viewer.dir }}"
+      register: ds_app_dir
+
+    - name: "Download DS Viewer on {{ inventory_hostname }}"
+      git:
+        repo: "{{ ds_viewer.distribution_url }}"
+        dest: "{{ ds_viewer.dir }}"
+      when: not ds_app_dir.stat.exists
+
+    - name: "Copy rbenv vars file on {{ inventory_hostname }}"
+      copy:
+        src: vars.txt
+        dest: '{{ ds_viewer.dir }}/.rbenv-vars'
+        owner: "{{ server.user }}"
+        group: "{{ server.user }}"
+      when: not ds_app_dir.stat.exists
+
+    - name: "Recursively change ownership of directory on {{ inventory_hostname }}"
+      file:
+        path: "{{ ds_viewer.dir }}"
+        state: directory
+        recurse: yes
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      when: not ds_app_dir.stat.exists
+
+    - name: "Edit application.rb to point to desired Cordra instance on {{ inventory_hostname }}"
+      lineinfile:
+        path: "{{ ds_viewer.dir }}/config/application.rb"
+        line: "{{ item.line }}"
+        regexp: "{{ item.regexp }}"
+      with_items:
+        - { line: '    config.cordra_server_url = "https://{{ cordra.cordra_nsidr_server.host_ip }}:{{ cordra.https_port }}"', regexp: 'config.cordra_server_url' }
+      when: not rbenv_dir.stat.exists
+
+    - name: "Bundle install on {{ inventory_hostname }}"
+      command: "{{ server.apps_dir}}/rbenvInit.sh bundle install"
+      args:
+        chdir: "{{ ds_viewer.dir }}"
+      become_user: "{{ server.user }}"
+      when: not ds_app_dir.stat.exists
+
+    - name: "rbenv rehash on {{ inventory_hostname }}"
+      command: "{{ server.apps_dir}}/rbenvInit.sh rbenv rehash"
+      become_user: "{{ server.user }}"
+      when: not ds_app_dir.stat.exists
+
+    - name: "Compile assests on {{ inventory_hostname }}"
+      command: "{{ server.apps_dir}}/rbenvInit.sh rails assets:precompile"
+      args:
+        chdir: "{{ ds_viewer.dir }}"
+      environment:
+        RAILS_ENV: "production"
+      become_user: "{{ server.user }}"
+      when: not ds_app_dir.stat.exists
+
+    - name: "Start rails application server on {{ inventory_hostname }}"
+      command: "{{ server.apps_dir}}/rbenvInit.sh rails server -b 0.0.0.0 -p {{ ds_viewer.http_port }} -e production -d"
+      args:
+        chdir: "{{ ds_viewer.dir }}"
+      become_user: "{{ server.user }}"
+      when: not ds_app_dir.stat.exists
+
+    - name: Wait for ds_viewer http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
+      wait_for:
+        port: "{{ ds_viewer.http_port }}"
+        delay: 5
+        timeout: 300
+        state: started
+        msg: "DS Viwer HTTP PORT is not Listening"
+      when: not ds_app_dir.stat.exists
+      register: ds_viewer_up
+
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Grafana on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setup Grafana FINISHED on {{ inventory_hostname }}"
+  tags: ["install_software"]

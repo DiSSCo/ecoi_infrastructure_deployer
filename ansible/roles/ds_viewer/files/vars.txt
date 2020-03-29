@@ -1,0 +1,10 @@
+# placeholder file for rbenv-vars
+# values must be replaced with proper ones on deployment machine
+# this has to be done manually
+# this file will be copied to .rbenv_vars on the /home/[deploy user]/.rbenv-vars (~/.rbenv-vars)
+# it contains only the required secret key for the moment 
+# this needs to be updated to use: gem 'capistrano-secrets-yml' on app code. 
+
+# required for compiling assets
+# needs fixing so this does not appear in git
+SECRET_KEY_BASE=1234567890

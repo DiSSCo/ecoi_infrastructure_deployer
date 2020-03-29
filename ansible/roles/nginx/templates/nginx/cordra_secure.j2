@@ -1,0 +1,26 @@
+server {
+        {% if item.value.ssl_enabled %}
+            listen {{ item.value.external_port }} ssl;
+            listen [::]:{{ item.value.external_port }} ssl http2;
+
+            ssl_certificate {{ server.apps_dir + '/certs/server.crt' }};
+            ssl_certificate_key {{ server.apps_dir + '/certs/server.key' }};
+
+            location / {
+               proxy_set_header X-Real-IP $remote_addr;
+               proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+               proxy_set_header Host $host;
+               proxy_set_header X-NginX-Proxy true;
+               proxy_pass {{ item.value.internal_protocol }}://127.0.0.1:{{ item.value.internal_port }}/;
+            }
+        {% else %}
+            listen {{ item.value.external_port }};
+            listen [::]:{{ item.value.external_port }};
+
+            location / {
+               proxy_set_header   X-Forwarded-For $remote_addr;
+               proxy_set_header   Host $http_host;
+               proxy_pass {{ item.value.internal_protocol }}://127.0.0.1:{{ item.value.internal_port }}/;
+            }
+        {% endif %}
+}

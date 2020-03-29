@@ -1,0 +1,5 @@
+#!/bin/bash
+cmd=$@
+export PATH="{{ ruby.rbenv_root }}/bin:{{ ruby.rbenv_root }}/plugins/ruby-build/bin:$PATH"
+eval "$(rbenv init -)"
+eval $cmd

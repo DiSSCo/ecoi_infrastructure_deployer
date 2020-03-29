@@ -1,0 +1,91 @@
+---
+- name: Setup Mongodb
+  block:
+    # Download MongoDB distribution and unzip in /opt as zip has folder mongodb-x.x.x
+    - name: Download and unarchive Mongodb
+      unarchive:
+        src: "{{ mongodb.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ mongodb.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: mongodb_download
+
+    - name: Fix permissions to mongodb dir
+      shell:
+        cmd: chown -R "{{ server.user }}":"{{ server.group }}" "{{ mongodb.dir }}"-*
+        warn: false
+      when: mongodb_download.changed
+
+    - name: Create simbolic link between mongodb-x.x.x and mongodb directory
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'mongodb-*' -exec ln -s {} "{{ mongodb.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ mongodb.dir }}"
+      when: mongodb_download.changed
+
+    - name: Create Mongodb "conf", "log" and "data" directories
+      file:
+        path: "{{item}}"
+        state: directory
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      with_items:
+        - "{{ mongodb.dir + '/conf'}}"
+        - "{{ mongodb.dir + '/data'}}"
+        - "{{ mongodb.dir + '/log'}}"
+
+    - name: Setup Mongodb configuration file and initial script file
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      with_items:
+        - { src: 'mongodb/mongod.conf.j2', dest: '{{ mongodb.dir + "/conf/mongod.conf"}}' }
+        - { src: 'mongodb/initial_setup.js.j2', dest: '{{ mongodb.dir + "/initial_setup.js" }}' }
+      when: mongodb_download.changed
+
+    - name: Run script to create inital users and databases in Mongodb
+      shell:
+        cmd: "{{item}}"
+        chdir: "{{ mongodb.dir }}"
+        warn: false
+      with_items:
+        - "sed -i 's/authorization: enabled/authorization: disabled/g' ./conf/mongod.conf"
+        - "./bin/mongod --config ./conf/mongod.conf --noauth"
+        - "{{ server.apps_dir}}/check_port.sh {{ mongodb.port }} 60 5"
+        - "./bin/mongo --host {{ cordra[instance_type].host_ip }} --port {{ mongodb.port }} /opt/mongodb/initial_setup.js"
+        - "rm initial_setup.js"
+        - "sed -i 's/authorization: disabled/authorization: enabled/g' ./conf/mongod.conf"
+        - "./bin/mongo localhost:{{ mongodb.port }}/admin --eval 'db.shutdownServer()'"
+        - "sleep 10"
+      become_user: "{{ server.user }}"
+      when: mongodb_download.changed
+
+    - name: Start secure Mongodb
+      shell:
+        cmd: ./bin/mongod --config ./conf/mongod.conf --auth
+        chdir: "{{ mongodb.dir }}"
+      become_user: "{{ server.user }}"
+      when: mongodb_download.changed
+
+    - name: Wait for Mongodb port to become open on the box, don't start checking for 5 seconds
+      wait_for:
+        port: "{{ mongodb.port }}"
+        delay: 5
+        timeout: 300
+        state: started
+        msg: "Mongodb port is not Listening"
+      when: mongodb_download.changed
+      register: mongodb_up
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Mongodb"
+  always:
+    - debug:
+        msg: "Setup Mongodb FINISHED"

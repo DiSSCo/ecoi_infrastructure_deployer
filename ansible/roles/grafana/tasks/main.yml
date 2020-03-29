@@ -1,0 +1,20 @@
+- name: Setting up server with Grafana on {{ inventory_hostname }}
+  block:
+    - import_tasks: 01-prepare_required_packages.yml
+      tags: [prepare_packages]
+
+    - import_tasks: 02-configure_network.yml
+      tags: [configure_network]
+
+    - import_tasks: 03-setup_grafana.yml
+      tags: [setup_grafana]
+
+    - import_tasks: 04-configure_startup_programs.yml
+      tags: [configure_startup_programs]
+
+  rescue:
+    - debug:
+        msg: "ERROR in Setting up server with Grafana on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setting up server with Grafana FINISHED on {{ inventory_hostname }}"

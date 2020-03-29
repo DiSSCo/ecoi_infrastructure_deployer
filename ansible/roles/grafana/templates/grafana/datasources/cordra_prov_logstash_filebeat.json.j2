@@ -1,0 +1,21 @@
+{
+	"name": "Cordra_prov_logstash_filebeat",
+	"type": "elasticsearch",
+	"url": "{{ elasticsearch.address_scheme }}://{{ elasticsearch.host_ip }}:{{ elasticsearch.http_port }}",
+	"access": "proxy",
+	"basicAuth": true,
+	"basicAuthUser": "{{ elasticsearch.elastic_user }}",
+	"secureJsonData": {
+		"basicAuthPassword": "{{ elasticsearch.elastic_password }}"
+	},
+	"jsonData": {
+		"esVersion": 70,
+		"logLevelField": "",
+		"logMessageField": "",
+		"maxConcurrentShardRequests": 5,
+		"timeField": "@timestamp",
+		"tlsSkipVerify": true
+	},
+	"database": "filebeat-cordra_prov_server-*",
+	"typeLogoUrl": "public/app/plugins/datasource/elasticsearch/img/elasticsearch.svg"
+}

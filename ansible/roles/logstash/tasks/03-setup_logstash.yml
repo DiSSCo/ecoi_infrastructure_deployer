@@ -1,0 +1,61 @@
+---
+- name: Setup Logstash on {{ inventory_hostname }}
+  block:
+    # Download Logstash distribution and unzip in /opt as zip has folder logstash-x.x.x
+    - name: Download and unarchive Logstash on {{ inventory_hostname }}
+      unarchive:
+        src: "{{ logstash.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ logstash.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: logstash_download
+
+    - name: Fix permissions to logstash dir on {{ inventory_hostname }}
+      shell:
+        cmd: chown -R "{{ server.user }}":"{{ server.group }}" "{{ logstash.dir }}"-*
+        warn: false
+      when: logstash_download.changed
+
+    - name: Create simbolic link between logstash-x.x.x and logstash directory on {{ inventory_hostname }}
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'logstash-*' -exec ln -s {} "{{ logstash.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ logstash.dir }}"
+      when: logstash_download.changed
+
+    - name: Create Cordra Logstash pipeline on {{ inventory_hostname }}
+      template:
+        src: "logstash/cordra_pipeline.conf.j2"
+        dest: "{{ logstash.dir + '/config/cordra_pipeline.conf'}}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      when: logstash_download.changed
+
+    - name: Start Logstash with Codra pipeline on {{ inventory_hostname }}
+      shell:
+        cmd: nohup ./bin/logstash -f ./config/cordra_pipeline.conf >> ./logstash.log 2>&1 &
+        chdir: "{{ logstash.dir }}"
+      become_user: "{{ server.user }}"
+      when: logstash_download.changed
+
+    - name: Wait for Logstash http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
+      wait_for:
+        port: "{{ logstash.http_port }}"
+        delay: 5
+        timeout: 300
+        state: started
+        msg: "Logstash HTTP PORT is not Listening"
+      when: logstash_download.changed
+      register: logstash_up
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Logstash on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setup Logstash FINISHED on {{ inventory_hostname }}"
+  tags: ["install_software"]

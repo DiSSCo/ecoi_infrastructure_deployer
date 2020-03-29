@@ -1,0 +1,14 @@
+digitalObjectRepository.url=https://{{ cordra[instance_type].host_ip }}:{{ cordra.https_port }}/
+digitalObjectRepository.handlePrefix={{ cordra[instance_type].handle_prefix }}
+digitalObjectRepository.username=admin
+digitalObjectRepository.password={{ cordra.admin_password }}
+digitalObjectRepository.doipPort={{ cordra.doip_port }}
+digitalObjectRepository.searchPageSize=10
+
+
+provenanceRepository.url=https://{{ cordra.cordra_prov.host_ip }}:{{ cordra.https_port }}/
+provenanceRepository.handlePrefix={{ cordra.cordra_prov_server.handle_prefix }}
+provenanceRepository.username=admin
+provenanceRepository.password={{ cordra.admin_password }}
+provenanceRepository.doipPort={{ cordra.doip_port }}
+provenanceRepository.searchPageSize=10

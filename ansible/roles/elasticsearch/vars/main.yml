@@ -1,0 +1,9 @@
+---
+# variables associated with this role
+java_home: /usr/lib/jvm/java-8-openjdk-amd64
+
+os_environment_variables:
+  - key: ES_HOME
+    value : "{{ elasticsearch.dir }}"
+  - key: JAVA_HOME
+    value: "{{ java_home }}"

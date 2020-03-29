@@ -1,0 +1,8 @@
+---
+# variables associated with this role
+ruby:
+  rbenv_root: "/home/{{ server.user }}/.rbenv"
+  ruby_version: 2.6.1
+  rails_version: 5.2.3
+
+bashrc: "/home/{{ server.user }}/.bashrc"

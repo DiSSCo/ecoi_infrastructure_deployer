@@ -1,0 +1,52 @@
+---
+- name: Setup Prometheus
+  block:
+    # Download Prometheus distribution and unzip in /opt as zip has folder prometheus-x.x.x
+    - name: Download and unarchive prometheus
+      unarchive:
+        src: "{{ prometheus.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ prometheus.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: prometheus_download
+
+    - name: Create simbolic link between prometheus-x.x.x and prometheus directory
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'prometheus-*' -exec ln -s {} "{{ prometheus.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ prometheus.dir }}"
+      when: prometheus_download.changed
+
+    - name: Configure Prometheus prometheus.yml
+      template:
+        src: "prometheus/prometheus.yml.j2"
+        dest: "{{ prometheus.dir + '/prometheus.yml'}}"
+      when: prometheus_download.changed
+
+    - name: Start Prometheus
+      shell:
+        cmd: nohup ./prometheus --config.file ./prometheus.yml --web.console.templates ./consoles --web.console.libraries ./console_libraries >> ./prometheus.log 2>&1 &
+        chdir: "{{ prometheus.dir }}"
+      become_user: "{{ server.user }}"
+      when: prometheus_download.changed
+
+    - name: Wait for prometheus http port to become open on the box, don't start checking for 5 seconds
+      wait_for:
+        port: "{{ prometheus.http_port }}"
+        delay: 5
+        timeout: 300
+        state: started
+        msg: "Prometheus HTTP PORT is not Listening"
+      when: prometheus_download.changed
+      register: prometheus_download_up
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Prometheus"
+  always:
+    - debug:
+        msg: "Setup Prometheus FINISHED"

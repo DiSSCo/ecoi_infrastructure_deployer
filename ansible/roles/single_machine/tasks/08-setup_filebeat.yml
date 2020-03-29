@@ -1,0 +1,48 @@
+---
+- name: Setup Filebeat
+  block:
+    # Download Filebeat distribution and unzip in /opt as zip has folder filebeat-x.x.x
+    - name: Download and unarchive Filebeat
+      unarchive:
+        src: "{{ filebeat.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ filebeat.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: filebeat_download
+
+    - name: Fix permissions to filebeat dir
+      shell:
+        cmd: chown -R "{{ server.user }}":"{{ server.group }}" "{{ filebeat.dir }}"-*
+        warn: false
+      when: filebeat_download.changed
+
+    - name: Create simbolic link between filebeat-x.x.x and filebeat directory
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'filebeat-*' -exec ln -s {} "{{ filebeat.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ filebeat.dir }}"
+      when: filebeat_download.changed
+
+    - name: Config Filebeat filebeat.yml
+      template:
+        src: "filebeat/filebeat.yml.j2"
+        dest: "{{ filebeat.dir + '/filebeat.yml'}}"
+      when: filebeat_download.changed
+
+    - name: Start Filebeat
+      shell:
+        cmd: nohup ./filebeat run -e >> filebeat.log 2>&1 &
+        chdir: "{{ filebeat.dir }}"
+      become_user: "{{ server.user }}"
+      when: filebeat_download.changed
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Filebeat"
+  always:
+    - debug:
+        msg: "Setup Filebeat FINISHED"

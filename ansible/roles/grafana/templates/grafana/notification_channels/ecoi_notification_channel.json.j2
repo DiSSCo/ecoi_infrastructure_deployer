@@ -1,0 +1,15 @@
+{
+  "name": "ECOI_notification_channel",
+  "type": "email",
+  "isDefault": false,
+  "sendReminder": false,
+  "disableResolveMessage": false,
+  "frequency": "",
+  "settings": {
+    "addresses": "{{ grafana.notification_email_address }}",
+    "autoResolve": true,
+    "httpMethod": "POST",
+    "severity": "critical",
+    "uploadImage": true
+  }
+}

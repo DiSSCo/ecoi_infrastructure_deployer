@@ -1,0 +1,29 @@
+input {
+  beats {
+    port => {{ logstash.beat_port }}
+  }
+}
+
+filter {
+  if [fields][app_source] == "cordra_log" {
+    grok {
+      match => [ "message", "%{DATA:[@metadata][timestamp]}\s*\[%{DATA:thread}\]\s*%{LOGLEVEL:loglevel}\s*%{DATA:logger}\s*-\s* %{GREEDYDATA:msg}" ]
+    }
+    date { match => [ "[@metadata][timestamp]", "yyyy-MM-dd HH:mm:ss.SSSZ" ] }
+    mutate { remove_field => ["message"] }
+  }
+
+  # Add new metadata field to indicate on what index we want to store the message depending on the input host name
+  mutate { add_field => { "[@metadata][target_index]" => "%{[@metadata][beat]}-%{[host][name]}-%{+YYYY.MM.dd}" } }
+}
+
+output {
+  elasticsearch {
+    hosts => ["http://{{ cordra[instance_type].host_ip }}:{{ elasticsearch.http_port }}"]
+    user => "{{ elasticsearch.elastic_user }}"
+    password => "{{ elasticsearch.elastic_password }}"
+    manage_template => false
+    index => "%{[@metadata][target_index]}"
+    document_type => "%{[@metadata][type]}"
+  }
+}

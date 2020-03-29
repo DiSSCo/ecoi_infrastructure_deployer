@@ -1,0 +1,144 @@
+{ 
+  "adminPassword": "{{ cordra.admin_password }}",
+  "prefix": "{{ cordra[instance_type].handle_prefix }}",
+  "baseUri": "{{ cordra[instance_type].base_uri}}",
+  "handleAdminIdentity": "{{ cordra[instance_type].handle_prefix }}/repo",
+
+  "design": {
+    "uiConfig": {
+      "title": "ICEDIG Digital Specimen Repository",
+      "relationshipsButtonText": "Show Relationships",
+      "allowUserToSpecifySuffixOnCreate": true,
+      "searchResults": {
+        "includeType": true
+      },
+      "initialQuery": "*:*",
+      "initialFragment": "#",
+      "initialSortFields": "/name",
+      "initialFilter": "Document",
+      "navBarLinks": [
+        {
+          "type": "url",
+          "title": "Get Started",
+          "url": "intro.html"
+        },
+        {
+          "type": "query",
+          "title": "All Objects",
+          "query": "*:*",
+          "sortFields": "/name"
+        },
+        {
+          "type": "typeDropdown",
+          "title": "Show Only",
+          "maxItems": 15
+        }
+      ],
+      "numTypesForCreateDropdown": 15,
+      "aclUiSearchTypes": [
+        "User",
+        "Group"
+      ]
+    },
+    "authConfig": {
+      "schemaAcls": {
+        "User": {
+          "defaultAclRead": [
+            "public"
+          ],
+          "defaultAclWrite": [
+            "self"
+          ],
+          "aclCreate": []
+        },
+        "CordraDesign": {
+          "defaultAclRead": [
+            "public"
+          ],
+          "defaultAclWrite": [],
+          "aclCreate": []
+        },
+        "Schema": {
+          "defaultAclRead": [
+            "public"
+          ],
+          "defaultAclWrite": [],
+          "aclCreate": []
+        },
+        "DigitalSpecimen": {
+          "defaultAclRead": [
+            "public"
+          ],
+          "defaultAclWrite": [
+            "creator"
+          ],
+          "aclCreate": [
+            "authenticated"
+          ],
+          "aclMethods": {
+            "instance": {
+              "processEvent": [
+                "writers"
+              ],
+              "getVersionAtGivenTime": [
+                "public"
+              ],
+              "getProvenanceRecords": [
+                "public"
+              ]
+            },
+            "default": {
+              "instance": [
+                "writers"
+              ]
+            }
+          }
+        }
+      },
+      "defaultAcls": {
+        "defaultAclRead": [
+          "public"
+        ],
+        "defaultAclWrite": [
+          "creator"
+        ],
+        "aclCreate": [
+          "authenticated"
+        ]
+      }
+    },
+    "handleMintingConfig": {
+      "prefix": "{{ cordra[instance_type].handle_prefix }}",
+      "baseUri": "{{ cordra[instance_type].base_uri}}",
+      "handleAdminIdentity": "{{ cordra[instance_type].handle_prefix }}/repo",
+      "defaultLinks": [
+        {
+          "type": "json",
+          "primary": false
+        },
+        {
+          "type": "ui",
+          "primary": true
+        }
+      ],
+      "ignoreHandleErrors": false
+    },
+	"handleServerConfig": {
+		"enabled": "{{ cordra.handleServer_enabled }}",
+		"externalAddress": "{{ cordra[instance_type].handleServer_host }}",
+		"tcpPort": "{{ cordra.handleServer_port }}",
+		"externalTcpPort": "{{ cordra.handleServer_port }}",
+		"logAccesses": false
+	},
+	"doip": {
+		"enabled": true,
+		"port": {{ cordra.doip_port }},
+		"backlog": 50,
+		"maxIdleTimeMillis": 300000,
+		"numThreads": 20,
+        "processorConfig": {
+          "serviceId": "{{ cordra[instance_type].handle_prefix }}/service"
+        }
+	}
+  }
+}

@@ -1,0 +1,21 @@
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+    - {{ cordra.dir }}/data/logs/error.log*
+  exclude_files: ['.gz$']
+  fields:
+    app_source: {{ filebeat.app_source }}
+  multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+  multiline.negate: true
+  multiline.match: after
+
+name: {{ inventory_hostname }}
+
+output.logstash:
+  hosts: ["{{ logstash.host_ip }}:{{ logstash.beat_port }}"]
+  ssl:
+    certificate_authorities: ["{{ server.apps_dir + '/certs/search_engine_server.crt' }}"]
+    # client certificate + key for client auth (if requested by server)
+    certificate: "{{ server.apps_dir + '/certs/server.crt' }}"
+    key: "{{ server.apps_dir + '/certs/server.key' }}"

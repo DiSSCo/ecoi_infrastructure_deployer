@@ -1,0 +1,30 @@
+- name: Setting up server with Node exporter on {{ inventory_hostname }}
+  block:
+    - import_tasks: 01-prepare_required_packages.yml
+      tags: [prepare_packages]
+
+    - import_tasks: 02-configure_network.yml
+      tags: [configure_network]
+
+    - import_tasks: 03-setup_node_exporter.yml
+      tags: [setup_node_exporter]
+
+    - import_tasks: 04-configure_startup_programs.yml
+      tags: [configure_startup_programs]
+
+    - include_role:
+        name: nginx
+      vars:
+        sites:
+          node_exporter:
+            ssl_enabled: true
+            external_port: "{{ node_exporter.http_port }}"
+            internal_port: "{{ node_exporter.http_internal_port }}"
+            internal_protocol: "http"
+
+  rescue:
+    - debug:
+        msg: "ERROR in Setting up server with Node exporter on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setting up server with Node exporter FINISHED on {{ inventory_hostname }}"

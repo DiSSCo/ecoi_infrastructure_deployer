@@ -1,0 +1,98 @@
+---
+- name: Setup Cordra
+  block:
+    # Download cordra distribution and unzip in /opt as zip has folder cordra-x.x.x
+    - name: Download and unarchive CORDRA
+      unarchive:
+        src: "{{ cordra.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ cordra.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: cordra_download
+
+    - name: Create symbolic link between cordra-x.x.x and cordra directory
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'cordra-*' -exec ln -s {} "{{ cordra.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ cordra.dir }}"
+      when: cordra_download.changed
+
+    - name: Setup Cordra config files (config.json and repoInit.json)
+      template:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      with_items:
+        - { src: '{{ "cordra/config.json.j2" }}', dest: '{{ cordra.dir + "/data/config.json" }}' }
+        - { src: '{{ "cordra/" + instance_type + "/repoInit.json.j2" }}', dest: '{{ cordra.dir + "/data/repoInit.json" }}' }
+      when: cordra_download.changed
+
+    - name: Copy Cordra handle keys
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      with_items:
+        - { src: '{{ "cordra/" + instance_type + "/cordra_privatekey" }}', dest: '{{ cordra.dir + "/data/privatekey" }}' }
+        - { src: '{{ "cordra/" + instance_type + "/cordra_publickey" }}', dest: '{{ cordra.dir + "/data/publickey" }}' }
+      when: cordra_download.changed and instance_type != 'cordra_prov_server'
+
+    - name: Start Cordra
+      shell:
+        cmd: nohup ./startup >> ./cordra.log 2>&1 &
+        chdir: "{{ cordra.dir }}"
+      become_user: "{{ server.user }}"
+      when: cordra_download.changed
+      register: cordra_up
+
+    - name: Wait for http cordra port to become open on the host, don't start checking for 5 seconds
+      wait_for:
+        port: "{{ cordra.http_internal_port }}"
+        delay: 5
+        timeout: 300
+        state: started
+        msg: "CORDRA HTTP PORT is not Listening"
+      when: cordra_up.changed
+
+    - name: Set up file with doip commands to load initial data
+      template:
+        src: "cordra/doip_load_initial_data.txt.j2"
+        dest: "{{ cordra.dir }}/doip_load_initial_data.txt"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      vars:
+        digital_objects: "{{ lookup('file', 'cordra/'+instance_type+'/initial_data.json') | from_json }}"
+      when: cordra_up.changed
+
+    # Restart Cordra as initial start doesn't have the doip service and run 2 the import of inital data as the first import
+    # only insert the first object
+    - name: Run DOIP commands to loading intial data
+      shell:
+        cmd: "{{item}}"
+        chdir: "{{ cordra.dir }}"
+        warn: false
+      with_items:
+        - "{{ server.apps_dir}}/check_port.sh {{ cordra.http_internal_port }} 60 5"
+        - "./shutdown"
+        - "sleep 15"
+        - "nohup ./startup >> ./cordra.log 2>&1 &"
+        - "{{ server.apps_dir}}/check_port.sh {{ cordra.http_internal_port }} 60 5"
+        - "sleep 10"
+        - "openssl s_client -connect {{ cordra[instance_type].host_ip }}:{{ cordra.doip_port }} < doip_load_initial_data.txt"
+        - "openssl s_client -connect {{ cordra[instance_type].host_ip }}:{{ cordra.doip_port }} -ign_eof < doip_load_initial_data.txt &"
+        - "rm doip_load_initial_data.txt"
+      become_user: "{{ server.user }}"
+      when: cordra_up.changed
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Cordra"
+  always:
+    - debug:
+        msg: "Setup Cordra FINISHED"

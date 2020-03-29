@@ -1,0 +1,16 @@
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+    - {{ cordra.dir }}/data/logs/error.log*
+  exclude_files: ['.gz$']
+  fields:
+    app_source: {{ filebeat.app_source }}
+  multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+  multiline.negate: true
+  multiline.match: after
+
+name: {{ inventory_hostname }}
+
+output.logstash:
+  hosts: ["{{ cordra[instance_type].host_ip }}:{{ logstash.beat_port }}"]

@@ -1,0 +1,39 @@
+---
+- name: Configure network
+  block:
+
+    - name: Open ports
+      ufw:
+        state: enabled
+        rule: allow
+        proto: tcp
+        from_ip: any
+        to_ip: any
+        port : '{{ item }}'
+      with_items:
+        - "22"
+        - "{{cordra.http_port}}"
+        - "{{cordra.https_port}}"
+        - "{{cordra.http_internal_port}}"
+        - "{{cordra.https_internal_port}}"
+        - "{{cordra.doip_port}}"
+        - "{{cordra.handleServer_port}}"
+        - "{{mongodb.port}}"
+        - "{{elasticsearch.http_port}}"
+        - "{{elasticsearch.transport_port}}"
+        - "{{logstash.http_port}}"
+        - "{{logstash.beat_port}}"
+        - "{{kibana.http_port}}"
+        - "{{prometheus.http_port}}"
+        - "{{node_exporter.http_port}}"
+        - "{{blackbox_exporter.http_port}}"
+        - "{{grafana.http_port}}"
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Configure network"
+  always:
+    - debug:
+        msg: "Configure network FINISHED"

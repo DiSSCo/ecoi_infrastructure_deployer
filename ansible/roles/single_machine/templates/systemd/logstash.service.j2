@@ -1,0 +1,15 @@
+[Unit]
+Description=Logstash
+Wants=network.target
+After=elasticsearch.service
+
+[Service]
+Type=simple
+WorkingDirectory={{ logstash.dir }}
+ExecStart={{ logstash.dir }}/bin/logstash -f {{ logstash.dir }}/config/cordra_pipeline.conf
+ExecStartPost={{ server.apps_dir}}/check_port.sh {{ logstash.http_port }} 60 5
+User={{ server.user }}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

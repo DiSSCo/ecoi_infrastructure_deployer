@@ -1,0 +1,37 @@
+input {
+  beats {
+    port => {{ logstash.beat_port }}
+    ssl => true
+    ssl_certificate => "{{ server.apps_dir + '/certs/server.crt' }}"
+    ssl_key => "{{ server.apps_dir + '/certs/server.key' }}"
+
+    ssl_verify_mode => "force_peer"
+    ssl_certificate_authorities => ["{{ server.apps_dir + '/certs/cordra_nsidr_server.crt' }}","{{ server.apps_dir + '/certs/cordra_prov_server.crt' }}"]
+  }
+}
+
+filter {
+  if [fields][app_source] == "cordra_log" {
+    grok {
+      match => [ "message", "%{DATA:[@metadata][timestamp]}\s*\[%{DATA:thread}\]\s*%{LOGLEVEL:loglevel}\s*%{DATA:logger}\s*-\s* %{GREEDYDATA:msg}" ]
+    }
+    date { match => [ "[@metadata][timestamp]", "yyyy-MM-dd HH:mm:ss.SSSZ" ] }
+    mutate { remove_field => ["message"] }
+  }
+
+  # Add new metadata field to indicate on what index we want to store the message depending on the input host name
+  mutate { add_field => { "[@metadata][target_index]" => "%{[@metadata][beat]}-%{[host][name]}-%{+YYYY.MM.dd}" } }
+}
+
+output {
+  elasticsearch {
+    hosts => ["{{ elasticsearch.address_scheme }}://{{ elasticsearch.host_ip }}:{{ elasticsearch.http_port }}"]
+    user => "{{ elasticsearch.elastic_user }}"
+    password => "{{ elasticsearch.elastic_password }}"
+    ssl => true
+    cacert => "{{ server.apps_dir + '/certs/search_engine_server.crt' }}"
+    manage_template => false
+    index => "%{[@metadata][target_index]}"
+    document_type => "%{[@metadata][type]}"
+  }
+}

@@ -1,0 +1,7 @@
+---
+- hosts: cordra_servers
+  order: inventory
+  gather_facts: yes
+  roles:
+    - role: single_machine
+      when: inventory_hostname=="cordra_nsidr_server"

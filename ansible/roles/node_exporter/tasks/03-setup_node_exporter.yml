@@ -1,0 +1,56 @@
+---
+- name: Setup Node exporter on {{ inventory_hostname }}
+  block:
+    - name: Save node_exporter user credentials in passwdfile on {{ inventory_hostname }}
+      htpasswd:
+        path: "{{ server.apps_dir + '/certs/passwdfile' }}"
+        name: node_exporter
+        password: "{{ node_exporter.admin_password }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+        mode: 0644
+
+    # Download Node_exporter distribution and unzip in /opt as zip has folder node_exporter-x.x.x
+    - name: Download and unarchive node_exporter on {{ inventory_hostname }}
+      unarchive:
+        src: "{{ node_exporter.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ node_exporter.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: node_exporter_download
+
+    - name: Create simbolic link between node_exporter-x.x.x and node_exporter directory on {{ inventory_hostname }}
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'node_exporter-*' -exec ln -s {} "{{ node_exporter.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ node_exporter.dir }}"
+      when: node_exporter_download.changed
+
+    - name: Start node_exporter on {{ inventory_hostname }}
+      shell:
+        cmd: nohup ./node_exporter --collector.systemd --web.listen-address='127.0.0.1:{{ node_exporter.http_internal_port }}' >> ./node_exporter.log 2>&1 &
+        chdir: "{{ node_exporter.dir }}"
+      become_user: "{{ server.user }}"
+      when: node_exporter_download.changed
+
+    - name: Wait for node_exporter http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
+      wait_for:
+        port: "{{ node_exporter.http_internal_port }}"
+        delay: 5
+        timeout: 300
+        state: started
+        msg: "Node exporter HTTP PORT is not Listening"
+      when: node_exporter_download.changed
+      register: node_exporter_up
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Node exporter on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setup Node exporter FINISHED on {{ inventory_hostname }}"
+  tags: ["install_software"]

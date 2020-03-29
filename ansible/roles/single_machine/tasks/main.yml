@@ -1,0 +1,50 @@
+- name: Setting up server with Cordra and Elasticsearch
+  block:
+    - import_tasks: 01-prepare_required_packages.yml
+      tags: [prepare_packages]
+
+    - import_tasks: 02-configure_network.yml
+      tags: [configure_network]
+
+    - import_tasks: 02-setup_nginx.yml
+      tags: [setup_nginx , install_software]
+
+    - import_tasks: 03-setup_node_exporter.yml
+      tags: [setup_node_exporter , install_software]
+
+    - import_tasks: 04-setup_blackbox_exporter.yml
+      tags: [setup_blackbox_exporter , install_software]
+
+    - import_tasks: 05-setup_prometheus.yml
+      tags: [setup_prometheus , install_software]
+
+    - import_tasks: 06-setup_elasticsearch.yml
+      tags: [setup_elasticsearch , install_software]
+
+    - import_tasks: 07-setup_logstash.yml
+      tags: [setup_logstash , install_software]
+
+    - import_tasks: 08-setup_filebeat.yml
+      tags: [setup_filebeat , install_software]
+
+    - import_tasks: 09-setup_mongodb.yml
+      tags: [setup_mongodb , install_software]
+
+    - import_tasks: 10-setup_cordra.yml
+      tags: [setup_cordra , install_software]
+
+    - import_tasks: 11-setup_kibana.yml
+      tags: [setup_kibana , install_software]
+
+    - import_tasks: 12-setup_grafana.yml
+      tags: [setup_grafana , install_software]
+
+    - import_tasks: 13-configure_startup_programs.yml
+      tags: [configure_startup_programs]
+
+  rescue:
+    - debug:
+        msg: "ERROR in Setting up server with Cordra, ELK and Prometheus"
+  always:
+    - debug:
+        msg: "Setting up server with Cordra, ELK and Prometheus FINISHED"

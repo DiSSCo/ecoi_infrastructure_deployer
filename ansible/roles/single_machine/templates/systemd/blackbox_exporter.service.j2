@@ -1,0 +1,15 @@
+[Unit]
+Description=Prometheus Blackbox exporter
+Wants=network.target
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory={{ blackbox_exporter.dir }}
+ExecStart={{ blackbox_exporter.dir }}/blackbox_exporter --config.file={{ blackbox_exporter.dir }}/blackbox.yml --web.listen-address=':{{ blackbox_exporter.http_port }}'
+ExecStartPost={{ server.apps_dir}}/check_port.sh {{ blackbox_exporter.http_port }} 60 5
+User={{ server.user }}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
