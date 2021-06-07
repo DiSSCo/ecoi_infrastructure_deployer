@@ -87,3 +87,5 @@ keys/**
 
 # Ignore cordra private key
 **/cordra_privatekey
+
+test_suite/

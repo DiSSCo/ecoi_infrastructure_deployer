@@ -2,6 +2,8 @@ Vagrant.require_version ">= 2.0.0"
 
 require 'json'
 require 'getoptlong'
+require 'aws-sdk-s3'
+require 'net/http'
 
 # A change to the i18n package which was upgraded with Vagrant 2.2.7. causes an error running vagrant up
 # As temportal workaround, we define the method except in the class Hash
@@ -28,6 +30,94 @@ def create_keys_files(config_data,external_private_key_path,internal_private_key
         end
         File.chmod(0600,internal_private_key_path)
     end
+end
+
+def run_api_tests_on_server(config_data)
+  # To-Do: Several variables (like AWS bucket name, handle prefix, etc.) should
+  # be moved to a separate config file to avoid duplication (also defined in
+  # file ansible/groupe_vars/all.yml)
+  if !File.directory?('test_suite')
+    Dir.mkdir('test_suite')
+  end
+  test_config_path = File.join('test_suite', 'config.properties')
+  test_jar_path = File.join('test_suite', 'nsidr-api-tests-0.1-test-jar-with-dependencies.jar')
+  junit_jar_path = File.join('test_suite', 'junit-platform-console-standalone.jar')
+  if !File.exist?(test_config_path)
+    File.open(test_config_path, 'w') do |f|
+      cert_validation = 'true'
+      if config_data['deployment']['environment'] == 'test'
+        if config_data['deployment']['default_provider'] == 'virtualbox'
+          cordra_nsidr_url = 'https://172.28.128.8'
+          cordra_prov_url = 'https://172.28.128.7'
+          cert_validation = 'false'
+        elsif config_data['deployment']['default_provider'] == 'aws'
+          cordra_nsidr_url = 'https://test.nsidr.org'
+          cordra_prov_url = 'https://test.prov.nsidr.org'
+        end
+        cordra_nsidr_handle_prefix = 'test.20.5000.1025'
+        cordra_prov_handle_prefix = 'test.prov.994'
+      else
+        cordra_nsidr_url = 'https://nsidr.org'
+        cordra_nsidr_handle_prefix = '20.5000.1025'
+        cordra_prov_url = 'https://prov.nsidr.org'
+        cordra_prov_handle_prefix = 'prov.994'
+      end
+      cordra_user_name = 'admin'
+      cordra_password = config_data['software']['cordra']['admin_password']
+      cordra_doip_port = '9000'
+      cordra_search_page_size = '10'
+
+      f.puts('digitalObjectRepository.url=' + cordra_nsidr_url)
+      f.puts('digitalObjectRepository.handlePrefix=' + cordra_nsidr_handle_prefix)
+      f.puts('digitalObjectRepository.username=' + cordra_user_name)
+      f.puts('digitalObjectRepository.password=' + cordra_password)
+      f.puts('digitalObjectRepository.doipPort=' + cordra_doip_port)
+      f.puts('digitalObjectRepository.searchPageSize=' + cordra_search_page_size)
+      f.puts('provenanceRepository.url=' + cordra_prov_url)
+      f.puts('provenanceRepository.handlePrefix=' + cordra_prov_handle_prefix)
+      f.puts('provenanceRepository.username=' + cordra_user_name)
+      f.puts('provenanceRepository.password=' + cordra_password)
+      f.puts('provenanceRepository.doipPort=' + cordra_doip_port)
+      f.puts('provenanceRepository.searchPageSize=' + cordra_search_page_size)
+      f.puts('cert_validation=' + cert_validation)
+    end
+  end
+  if !File.exist?(test_jar_path)
+    bucket_name = 'dissco-cordra-distributions'
+    object_key = 'nsidr-api-tests-0.1-test-jar-with-dependencies.jar'
+    region = config_data['software']['mongodb']['backup']['s3']['region']
+    access_key_id = cordra_password = config_data['software']['general']['aws_access']['access_key_id']
+    secret_access_key = config_data['software']['general']['aws_access']['secret_access_key']
+    s3_client = Aws::S3::Client.new(
+      region: region,
+      credentials: Aws::Credentials.new(access_key_id, secret_access_key)
+    )
+    s3_client.get_object(
+      response_target: test_jar_path,
+      bucket: bucket_name,
+      key: object_key
+    )
+  end
+  if !File.exist?(junit_jar_path)
+    Net::HTTP.start("repo1.maven.org", 443, use_ssl:true) do |http|
+      resp = http.get("/maven2/org/junit/platform/junit-platform-console-standalone/1.7.2/junit-platform-console-standalone-1.7.2.jar")
+      open(junit_jar_path, "wb") do |file|
+        file.write(resp.body)
+      end
+    end
+  end
+  if config_data['deployment']['environment'] == 'test'
+    intrusive_tests = 'true'
+  else
+    intrusive_tests = 'false'
+  end
+  shell_cmd = "java -Dconfig.path=#{test_config_path} -DintrusiveTests=#{intrusive_tests} " +
+    "-jar #{junit_jar_path} -cp #{test_jar_path} --select-package eu.dissco.nsidr.testing"
+  puts 'running command:'
+  puts shell_cmd
+  test_result = %x[ #{shell_cmd} ]
+  puts 'Test esults:'
+  puts test_result
 end
 
 # Read config properties from config file
@@ -381,6 +471,13 @@ Vagrant.configure('2') do |config|
           "deployment_config": config_data['deployment']
         }
         ansible.pip_install_cmd = "sudo apt-get install -y python3-distutils && curl -s https://bootstrap.pypa.io/get-pip.py | sudo python3"
+      end
+
+      cordra_nsidr_server.trigger.after :provision do |trigger|
+        trigger.name = "Run API tests on nsidr server"
+        trigger.ruby do |env,machine|
+          run_api_tests_on_server(config_data)
+        end
       end
 
       if !provider.casecmp?("virtualbox") && !deployment_environment.casecmp?("test") then
