@@ -58,7 +58,3 @@
   import_playbook: restore_backup.yml
   tags: [restore_backup]
   when: server.restore_db_backup_after_setup
-
-- name: Run test suite
-  import_playbook: test_suite.yml
-  tags: [test_suite]
