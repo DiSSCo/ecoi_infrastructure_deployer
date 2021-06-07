@@ -165,7 +165,7 @@ Vagrant.configure('2') do |config|
 
       # Specific setup for this virtual machine when using the virtualbox provider
       monitoring_server.vm.provider "virtualbox" do |h, override|
-        monitoring_server.vm.network "private_network", name: "vboxnet0", ip: "172.28.128.3", adapter: 2
+        monitoring_server.vm.network "private_network", ip: "172.28.128.3", adapter: 2
         h.memory = 1024
         h.cpus = 1
       end
@@ -199,7 +199,7 @@ Vagrant.configure('2') do |config|
 
       # Specific setup for this virtual machine when using the virtualbox provider
       db_server.vm.provider "virtualbox" do |h, override|
-        db_server.vm.network "private_network", name: "vboxnet0", ip: "172.28.128.4", adapter: 2
+        db_server.vm.network "private_network", ip: "172.28.128.4", adapter: 2
         h.memory = 1024
         h.cpus = 1
       end
@@ -237,7 +237,7 @@ Vagrant.configure('2') do |config|
 
       # Specific setup for this virtual machine when using the virtualbox provider
       search_engine_server.vm.provider "virtualbox" do |h, override|
-        search_engine_server.vm.network "private_network", name: "vboxnet0", ip: "172.28.128.5", adapter: 2
+        search_engine_server.vm.network "private_network", ip: "172.28.128.5", adapter: 2
         h.memory = 1536
         h.cpus = 1
       end
@@ -268,7 +268,7 @@ Vagrant.configure('2') do |config|
 
       # Specific setup for this virtual machine when using the virtualbox provider
       ds_viewer_server.vm.provider "virtualbox" do |h, override|
-        ds_viewer_server.vm.network "private_network", name: "vboxnet0", ip: "172.28.128.6", adapter: 2
+        ds_viewer_server.vm.network "private_network", ip: "172.28.128.6", adapter: 2
         h.memory = 1024
         h.cpus = 1
       end
@@ -302,7 +302,7 @@ Vagrant.configure('2') do |config|
 
       # Specific setup for this virtual machine when using the virtualbox provider
       cordra_prov_server.vm.provider "virtualbox" do |h, override|
-        cordra_prov_server.vm.network "private_network", name: "vboxnet0", ip: "172.28.128.7", adapter: 2
+        cordra_prov_server.vm.network "private_network", ip: "172.28.128.7", adapter: 2
         h.memory = 1024
         h.cpus = 1
       end
@@ -336,7 +336,7 @@ Vagrant.configure('2') do |config|
 
       # Specific setup for this virtual machine when using the virtualbox provider
       cordra_nsidr_server.vm.provider "virtualbox" do |h, override|
-        cordra_nsidr_server.vm.network "private_network", name: "vboxnet0", ip: "172.28.128.8", adapter: 2
+        cordra_nsidr_server.vm.network "private_network", ip: "172.28.128.8", adapter: 2
         h.memory = 1024
         h.cpus = 1
       end
