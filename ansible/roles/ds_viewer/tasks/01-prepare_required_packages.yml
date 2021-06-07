@@ -30,7 +30,7 @@
           - redis-server
           - redis-tools
           - git               #to download portal source code
-          - python-mysqldb    #required for ansible mysql modules
+          - python3-mysqldb    #required for ansible mysql modules
           - sqlite3 # app defaults to sqlite3 even if no db is used
           - libsqlite3-dev # required for bundle install to succeed
           - libmysqlclient-dev #required to connect to mysql databases
