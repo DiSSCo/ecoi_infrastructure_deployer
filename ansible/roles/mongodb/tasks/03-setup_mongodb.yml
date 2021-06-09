@@ -64,23 +64,6 @@
       become_user: "{{ server.user }}"
       when: mongodb_download.changed
 
-#    - name: Start secure Mongodb on {{ inventory_hostname }}
-#      shell:
-#        cmd: ./bin/mongod --config ./conf/mongod.conf --auth
-#        chdir: "{{ mongodb.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: mongodb_download.changed
-#
-#    - name: Wait for Mongodb port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
-#      wait_for:
-#        port: "{{ mongodb.port }}"
-#        delay: 5
-#        timeout: 300
-#        state: started
-#        msg: "Mongodb port is not Listening"
-#      when: mongodb_download.changed
-#      register: mongodb_up
-
     - name: Config Mongodb service on {{ inventory_hostname }}
       template:
         src: systemd/mongodb.service.j2

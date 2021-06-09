@@ -34,23 +34,6 @@
         dest: "{{ blackbox_exporter.dir + '/blackbox.yml'}}"
       when: blackbox_exporter_download.changed
 
-#    - name: Start blackbox_exporter on {{ inventory_hostname }}
-#      shell:
-#        cmd: nohup ./blackbox_exporter --config.file=./blackbox.yml --web.listen-address='127.0.0.1:{{ blackbox_exporter.http_internal_port }}' >> ./blackbox_exporter.log 2>&1 &
-#        chdir: "{{ blackbox_exporter.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: blackbox_exporter_download.changed
-#
-#    - name: Wait for blackbox_exporter http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
-#      wait_for:
-#        port: "{{ blackbox_exporter.http_internal_port }}"
-#        delay: 5
-#        timeout: 300
-#        state: started
-#        msg: "Blackbox exporter HTTP PORT is not Listening"
-#      when: blackbox_exporter_download.changed
-#      register: blackbox_exporter_up
-
     - name: Config Blackbox Exporter service on {{ inventory_hostname }}
       template:
         src: systemd/blackbox_exporter.service.j2

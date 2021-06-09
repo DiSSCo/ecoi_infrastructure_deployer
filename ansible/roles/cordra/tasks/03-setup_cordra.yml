@@ -139,23 +139,6 @@
         - { src: 'cordra/delete_handle_ids_from_handle_server.sh.j2', dest: '{{ cordra.dir }}/bin' }
       when: cordra_download.changed and cordra.handleServer_enabled
 
-    # - name: Start Cordra on {{ inventory_hostname }}
-    #  shell:
-    #    cmd: nohup ./startup >> ./cordra.log 2>&1 &
-    #    chdir: "{{ cordra.dir }}"
-    #  become_user: "{{ server.user }}"
-    #  when: cordra_download.changed
-    #  register: cordra_up
-
-    # - name: Wait for http cordra port to become open on the host, don't start checking for 5 seconds on {{ inventory_hostname }}
-    #  wait_for:
-    #    port: "{{ cordra.http_internal_port }}"
-    #    delay: 5
-    #    timeout: 300
-    #    state: started
-    #    msg: "CORDRA HTTP PORT is not Listening"
-    #  when: cordra_download.changed
-
     - name: Config Cordra service on {{ inventory_hostname }}
       template:
         src: systemd/cordra.service.j2

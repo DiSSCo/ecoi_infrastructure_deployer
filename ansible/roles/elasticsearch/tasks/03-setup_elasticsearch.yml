@@ -54,23 +54,6 @@
         - { src: '{{ server.apps_dir + "/certs/server.crt" }}', dest: '{{ elasticsearch.dir + "/config/server.crt" }}' }
         - { src: '{{ server.apps_dir + "/certs/server.key" }}', dest: '{{ elasticsearch.dir + "/config/server.key" }}' }
 
-#    - name: Start Elasticsearch on {{ inventory_hostname }}
-#      shell:
-#        cmd: nohup ./bin/elasticsearch -p elasticsearch.pid >> ./elasticsearch.log 2>&1 &
-#        chdir: "{{ elasticsearch.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: elasticsearch_download.changed
-#
-#    - name: Wait for Elasticsearch http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
-#      wait_for:
-#        port: "{{ elasticsearch.http_port }}"
-#        delay: 5
-#        timeout: 300
-#        state: started
-#        msg: "Elasticsearch HTTP PORT is not Listening"
-#      when: elasticsearch_download.changed
-#      register: elasticsearch_up
-
     - name: Config Elasticsearch service on {{ inventory_hostname }}
       template:
         src: systemd/elasticsearch.service.j2

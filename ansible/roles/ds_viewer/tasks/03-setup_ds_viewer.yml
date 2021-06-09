@@ -67,23 +67,6 @@
       become_user: "{{ server.user }}"
       when: not ds_app_dir.stat.exists
 
-#    - name: "Start rails application server on {{ inventory_hostname }}"
-#      command: "{{ server.apps_dir}}/rbenvInit.sh rails server -b 0.0.0.0 -p {{ ds_viewer.http_internal_port }} -e production -d"
-#      args:
-#        chdir: "{{ ds_viewer.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: not ds_app_dir.stat.exists
-#
-#    - name: Wait for ds_viewer http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
-#      wait_for:
-#        port: "{{ ds_viewer.http_internal_port }}"
-#        delay: 5
-#        timeout: 300
-#        state: started
-#        msg: "DS Viwer HTTP PORT is not Listening"
-#      when: not ds_app_dir.stat.exists
-#      register: ds_viewer_up
-
     - name: Config Ds Viewer service on {{ inventory_hostname }}
       template:
         src: systemd/ds_viewer.service.j2

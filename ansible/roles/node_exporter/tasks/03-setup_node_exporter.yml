@@ -28,23 +28,6 @@
         creates: "{{ node_exporter.dir }}"
       when: node_exporter_download.changed
 
-#    - name: Start node_exporter on {{ inventory_hostname }}
-#      shell:
-#        cmd: nohup ./node_exporter --collector.systemd --web.listen-address='127.0.0.1:{{ node_exporter.http_internal_port }}' >> ./node_exporter.log 2>&1 &
-#        chdir: "{{ node_exporter.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: node_exporter_download.changed
-#
-#    - name: Wait for node_exporter http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
-#      wait_for:
-#        port: "{{ node_exporter.http_internal_port }}"
-#        delay: 5
-#        timeout: 300
-#        state: started
-#        msg: "Node exporter HTTP PORT is not Listening"
-#      when: node_exporter_download.changed
-#      register: node_exporter_up
-
     - name: Config Node Exporter service on {{ inventory_hostname }}
       template:
         src: systemd/node_exporter.service.j2

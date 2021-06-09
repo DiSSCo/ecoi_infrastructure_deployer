@@ -31,23 +31,6 @@
         dest: "{{ kibana.dir + '/config/kibana.yml'}}"
       when: kibana_download.changed
 
-#    - name: Start Kibana on {{ inventory_hostname }}
-#      shell:
-#        cmd: nohup ./bin/kibana >> kibana.log 2>&1 &
-#        chdir: "{{ kibana.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: kibana_download.changed
-#
-#    - name: Wait for Kibana http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
-#      wait_for:
-#        port: "{{ kibana.http_port }}"
-#        delay: 5
-#        timeout: 300
-#        state: started
-#        msg: "Kibana HTTP PORT is not Listening"
-#      when: kibana_download.changed
-#      register: kibana_up
-
     - name: Config Kibana service on {{ inventory_hostname }}
       template:
         src: systemd/kibana.service.j2

@@ -33,23 +33,6 @@
         group: "{{ server.group }}"
       when: logstash_download.changed
 
-#    - name: Start Logstash with Codra pipeline on {{ inventory_hostname }}
-#      shell:
-#        cmd: nohup ./bin/logstash -f ./config/cordra_pipeline.conf >> ./logstash.log 2>&1 &
-#        chdir: "{{ logstash.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: logstash_download.changed
-#
-#    - name: Wait for Logstash http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
-#      wait_for:
-#        port: "{{ logstash.http_port }}"
-#        delay: 5
-#        timeout: 300
-#        state: started
-#        msg: "Logstash HTTP PORT is not Listening"
-#      when: logstash_download.changed
-#      register: logstash_up
-
     - name: Config Logstash service on {{ inventory_hostname }}
       template:
         src: systemd/logstash.service.j2

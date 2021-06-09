@@ -33,23 +33,6 @@
         group: "{{ server.group }}"
       when: grafana_download.changed
 
-#    - name: Start Grafana using config file on {{ inventory_hostname }}
-#      shell:
-#        cmd: nohup ./bin/grafana-server --config ./conf/grafana.ini >> ./grafana.log 2>&1 &
-#        chdir: "{{ grafana.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: grafana_download.changed
-#
-#    - name: Wait for Grafana http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
-#      wait_for:
-#        port: "{{ grafana.http_internal_port }}"
-#        delay: 5
-#        timeout: 300
-#        state: started
-#        msg: "Grafana HTTP PORT is not Listening"
-#      when: grafana_download.changed
-#      register: grafana_up
-
     - name: Config Grafana service on {{ inventory_hostname }}
       template:
         src: systemd/grafana.service.j2

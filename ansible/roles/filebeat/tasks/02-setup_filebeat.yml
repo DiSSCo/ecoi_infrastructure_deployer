@@ -31,13 +31,6 @@
         dest: "{{ filebeat.dir + '/filebeat.yml'}}"
       when: filebeat_download.changed
 
-#    - name: Start Filebeat on {{ inventory_hostname }}
-#      shell:
-#        cmd: nohup ./filebeat run -e >> filebeat.log 2>&1 &
-#        chdir: "{{ filebeat.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: filebeat_download.changed
-
     - name: Config Filebeat service on {{ inventory_hostname }}
       template:
         src: systemd/filebeat.service.j2
