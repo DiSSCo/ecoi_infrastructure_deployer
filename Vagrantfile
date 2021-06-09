@@ -2,7 +2,6 @@ Vagrant.require_version ">= 2.0.0"
 
 require 'json'
 require 'getoptlong'
-require 'aws-sdk-s3'
 require 'net/http'
 
 # A change to the i18n package which was upgraded with Vagrant 2.2.7. causes an error running vagrant up
@@ -42,45 +41,43 @@ def run_api_tests_on_server(config_data)
   test_config_path = File.join('test_suite', 'config.properties')
   test_jar_path = File.join('test_suite', 'nsidr-api-tests-0.1-test-jar-with-dependencies.jar')
   junit_jar_path = File.join('test_suite', 'junit-platform-console-standalone.jar')
-  if !File.exist?(test_config_path)
-    File.open(test_config_path, 'w') do |f|
-      cert_validation = 'true'
-      if config_data['deployment']['environment'] == 'test'
-        if config_data['deployment']['default_provider'] == 'virtualbox'
-          cordra_nsidr_url = 'https://172.28.128.8'
-          cordra_prov_url = 'https://172.28.128.7'
-          cert_validation = 'false'
-        elsif config_data['deployment']['default_provider'] == 'aws'
-          cordra_nsidr_url = 'https://test.nsidr.org'
-          cordra_prov_url = 'https://test.prov.nsidr.org'
-        end
-        cordra_nsidr_handle_prefix = 'test.20.5000.1025'
-        cordra_prov_handle_prefix = 'test.prov.994'
-      else
-        cordra_nsidr_url = 'https://nsidr.org'
-        cordra_nsidr_handle_prefix = '20.5000.1025'
-        cordra_prov_url = 'https://prov.nsidr.org'
-        cordra_prov_handle_prefix = 'prov.994'
+  File.open(test_config_path, 'w') do |f|
+    cert_validation = 'true'
+    if config_data['deployment']['environment'] == 'test'
+      if config_data['deployment']['default_provider'] == 'virtualbox'
+        cordra_nsidr_url = 'https://172.28.128.8'
+        cordra_prov_url = 'https://172.28.128.7'
+        cert_validation = 'false'
+      elsif config_data['deployment']['default_provider'] == 'aws'
+        cordra_nsidr_url = 'https://test.nsidr.org'
+        cordra_prov_url = 'https://test.prov.nsidr.org'
       end
-      cordra_user_name = 'admin'
-      cordra_password = config_data['software']['cordra']['admin_password']
-      cordra_doip_port = '9000'
-      cordra_search_page_size = '10'
-
-      f.puts('digitalObjectRepository.url=' + cordra_nsidr_url)
-      f.puts('digitalObjectRepository.handlePrefix=' + cordra_nsidr_handle_prefix)
-      f.puts('digitalObjectRepository.username=' + cordra_user_name)
-      f.puts('digitalObjectRepository.password=' + cordra_password)
-      f.puts('digitalObjectRepository.doipPort=' + cordra_doip_port)
-      f.puts('digitalObjectRepository.searchPageSize=' + cordra_search_page_size)
-      f.puts('provenanceRepository.url=' + cordra_prov_url)
-      f.puts('provenanceRepository.handlePrefix=' + cordra_prov_handle_prefix)
-      f.puts('provenanceRepository.username=' + cordra_user_name)
-      f.puts('provenanceRepository.password=' + cordra_password)
-      f.puts('provenanceRepository.doipPort=' + cordra_doip_port)
-      f.puts('provenanceRepository.searchPageSize=' + cordra_search_page_size)
-      f.puts('cert_validation=' + cert_validation)
+      cordra_nsidr_handle_prefix = 'test.20.5000.1025'
+      cordra_prov_handle_prefix = 'test.prov.994'
+    else
+      cordra_nsidr_url = 'https://nsidr.org'
+      cordra_nsidr_handle_prefix = '20.5000.1025'
+      cordra_prov_url = 'https://prov.nsidr.org'
+      cordra_prov_handle_prefix = 'prov.994'
     end
+    cordra_user_name = 'admin'
+    cordra_password = config_data['software']['cordra']['admin_password']
+    cordra_doip_port = '9000'
+    cordra_search_page_size = '10'
+
+    f.puts('digitalObjectRepository.url=' + cordra_nsidr_url)
+    f.puts('digitalObjectRepository.handlePrefix=' + cordra_nsidr_handle_prefix)
+    f.puts('digitalObjectRepository.username=' + cordra_user_name)
+    f.puts('digitalObjectRepository.password=' + cordra_password)
+    f.puts('digitalObjectRepository.doipPort=' + cordra_doip_port)
+    f.puts('digitalObjectRepository.searchPageSize=' + cordra_search_page_size)
+    f.puts('provenanceRepository.url=' + cordra_prov_url)
+    f.puts('provenanceRepository.handlePrefix=' + cordra_prov_handle_prefix)
+    f.puts('provenanceRepository.username=' + cordra_user_name)
+    f.puts('provenanceRepository.password=' + cordra_password)
+    f.puts('provenanceRepository.doipPort=' + cordra_doip_port)
+    f.puts('provenanceRepository.searchPageSize=' + cordra_search_page_size)
+    f.puts('cert_validation=' + cert_validation)
   end
   if !File.exist?(test_jar_path)
     bucket_name = 'dissco-cordra-distributions'
@@ -116,7 +113,7 @@ def run_api_tests_on_server(config_data)
   puts 'running command:'
   puts shell_cmd
   test_result = %x[ #{shell_cmd} ]
-  puts 'Test esults:'
+  puts 'Test results:'
   puts test_result
 end
 
@@ -162,7 +159,7 @@ end
 
 Vagrant.configure('2') do |config|
 
-  config.vagrant.plugins = [{"fog-ovirt" => {"version" => "1.0.1"}},"vagrant-aws"]
+  config.vagrant.plugins = ["aws-sdk-s3", {"fog-ovirt" => {"version" => "1.0.1"}}, "vagrant-aws"]
 
   config.ssh.username = ssh_username
 

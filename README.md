@@ -85,13 +85,15 @@ vagrant will use to connect to that cloud provider:
 
 3. Open an admin command line console in your machine, here the process is different for production and test
 
+###### Note:
+If an error occurs when Vagrant trys to auto-install the specified plugins, try to install them manually from the command line, i.e. run `vagrant plugin install fog-ovirt --plugin-version 1.0.1 && vagrant plugin install aws-sdk-s3 && vagrant plugin install vagrant-aws`
+
 #### Production environment:
 1. Go to the folder where the vagrant file is and run the command ```vagrant up --no-provision``` for creating the machines in the cloud provider
 and updating the ansible/inventory.ini with their private IPv4 IPs. After that run ```vagrant reload --provision``` so all the provisioners will be executed
 including the ansible provisioner inside the cordra_nsidr_server that is responsible to install all the software in the VMs
 Note: This Vagrantfile won't work if we try to execut it inside a Linux VM running on Hyper-V on a windows host, because can't change permissions
 of private ssh keys
-
 
 #### Test environment:
 The problem is that now Elastic IPs are defined for the test environment and the public IPv4 addresses of the machines change on every reboot. Therefore:
@@ -129,8 +131,29 @@ If the servers are running already and the ansible script should only restore th
 ```
 
 #### Finally
-Check that all the service are up and running correctly. To see the list of the services running in each machine have a look at
+Check that all the services are up and running correctly. To see the list of the services running in each machine have a look at
 docs/ECOIS_subcomponents_deployment_diagram.pdf
+
+
+### Side note: Starting vagrant from a new host computer (while VMs are running)
+If you copy this repository and want to execute a command like `vagrant provision monitoring_server` (while the VM is running on AWS) Vagrant will return the error "Instance is not created" because it cannot connect to the VM. This is because the .vagrant folder is ignored in the github repository. To make Vagrant understand that the VMs are actually already running on AWS and know where to find them (so that Vagrant does not create new instances), the following workaround must be applied (only once at the beginning):
+```bash
+# Initially run from the root of this directory (make sure you created the config as described above 2.)
+vagrant status
+# This will return that no instances are created yet
+# However, this also creates the .vagrant directory with the structure we need
+```
+We now need the Instance-IDs of all virtual machines running on AWS. You can either extract them from the Web interface or if you have the [AWS-cli](https://aws.amazon.com/de/cli/) installed with this command: `aws ec2 describe-instances --query "Reservations[*].Instances[*].{Instance:InstanceId,Name:Tags[?Key=='Name']|[0].Value}"`. Instance-IDs usually start with 'i-0...'
+
+Then, for each of the VMs run (replace with the correct Instance-ID)
+```bash
+echo i-0INSTANCEID_MONITORING > .vagrant/machines/monitoring_server/aws/id
+echo i-0INSTANCEID_NSIDR > .vagrant/machines/cordra_nsidr_server/aws/id
+# ... and so on for all 6 VMs with the names given by vagrant status
+# If your are working on the test environment, use the 'test_' prefix e.g.
+echo i-0INSTANCEID_NSIDR > .vagrant/machines/test_cordra_nsidr_server/aws/id
+```
+Run `vagrant status` againg to verify that Vagrant detects the VMs correctly and displays their status as 'running'. You can now run other Vagrant command to manage these VMs. For rsync and ssh access to work it might be necessary to run `vagrant reload` to completely synchronize Vagrant with the current state of the VM.
 
 
 ## 4. Updating Handle records
