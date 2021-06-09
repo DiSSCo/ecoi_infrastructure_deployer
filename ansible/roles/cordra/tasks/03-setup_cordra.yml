@@ -65,6 +65,9 @@
         - { src: '{{ "cordra/" + instance_type + "/doec_config.properties.j2" }}', dest: '{{ cordra.dir + "/data/doec_config.properties" }}' }
       when: cordra_download.changed and instance_type != 'cordra_prov_server'
 
+    # java_cert module per default replaces an existing certificate in the keystore if
+    # the new cert is different. Attention: ansible community package > 2.5.2 is needed
+    # This task should therefore not have a conditional "when" block
     - name: Import SSL certificate from search_engine_server to the default java cacerts keystore on {{ inventory_hostname }}
       java_cert:
         cert_alias: search_engine_server
@@ -72,7 +75,6 @@
         keystore_path: "{{ java_home + '/jre/lib/security/cacerts' }}"
         keystore_pass: changeit
         state: present
-      when: cordra_download.changed
 
     - name: Copy Cordra handle keys on {{ inventory_hostname }}
       copy:
