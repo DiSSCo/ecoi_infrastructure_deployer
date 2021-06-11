@@ -186,7 +186,8 @@ Vagrant.configure('2') do |config|
     aws.access_key_id = config_data['infrastructure']['aws']['access_key_id']
     aws.secret_access_key = config_data['infrastructure']['aws']['secret_access_key']
     aws.region = "eu-west-2"
-    aws.ami = "ami-04cc79dd5df3bffca"
+    # Official Ubuntu 20.04 LTS (built 2021-04-30) AMI image from Canonical, no additional costs:
+    aws.ami = "ami-0194c3e07668a7e36"
     aws.keypair_name = "jointdemo"
   end
 
