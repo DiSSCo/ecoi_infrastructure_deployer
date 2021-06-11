@@ -179,7 +179,7 @@ Vagrant.configure('2') do |config|
 
   # Default configuration for AWS virtual machines
   config.vm.provider "aws" do |aws, override|
-    override.vm.box = "FEBO/ubuntu20"
+    override.vm.box = "aws-empty-box"
     override.ssh.private_key_path = './'+external_private_key_path
     override.vm.synced_folder ".", mount_synced_folder, type:"rsync", rsync__auto: true, rsync__exclude: [".git/","/config/","/keys/external/"]
 

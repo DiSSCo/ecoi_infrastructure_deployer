@@ -83,7 +83,9 @@ vagrant will use to connect to that cloud provider:
     - the security groups
     - elastic/public IPs    
 
-3. Open an admin command line console in your machine, here the process is different for production and test
+3. Open an admin command line console in your machine. Vagrant always requires a 'box' to run, even though in the case of aws provider all configuration can be given in the Vagrantfile. Run `vagrant box add aws-empty-box https://github.com/mitchellh/vagrant-aws/raw/master/dummy.box` to install the dummy box on your machine.
+
+4. Now, the further process is different for production and test:
 
 ###### Note:
 If an error occurs when Vagrant trys to auto-install the specified plugins, try to install them manually from the command line, i.e. run `vagrant plugin install fog-ovirt --plugin-version 1.0.1 && vagrant plugin install aws-sdk-s3 && vagrant plugin install vagrant-aws`
@@ -153,7 +155,7 @@ echo i-0INSTANCEID_NSIDR > .vagrant/machines/cordra_nsidr_server/aws/id
 # If your are working on the test environment, use the 'test_' prefix e.g.
 echo i-0INSTANCEID_NSIDR > .vagrant/machines/test_cordra_nsidr_server/aws/id
 ```
-Run `vagrant status` againg to verify that Vagrant detects the VMs correctly and displays their status as 'running'. You can now run other Vagrant command to manage these VMs. For rsync and ssh access to work it might be necessary to run `vagrant reload` to completely synchronize Vagrant with the current state of the VM.
+Run `vagrant status` again to verify that Vagrant detects the VMs correctly and displays their status as 'running'. You can now run other Vagrant command to manage these VMs. For rsync and ssh access to work it might be necessary to run `vagrant reload` to completely synchronize Vagrant with the current state of the VM.
 
 
 ## 4. Updating Handle records
