@@ -1,0 +1,31 @@
+- name: Runa update_app_checker on {{ inventory_hostname }}
+  block:
+    - name: Checking if app_version_file for {{ app_dir }} exists on {{ inventory_hostname }}
+      stat:
+        path: "{{ app_dir + server.apps_version_file_suffix }}"
+      register: app_version_file
+
+    - name: Read app_version_file
+      slurp:
+        src: "{{ app_dir + server.apps_version_file_suffix }}"
+      when: app_version_file.stat.exists
+      register: app_version_read
+
+    - name: Compare stored file version with new provided one
+      set_fact: {"{{ output_fact }}":"{{ app_version_read.content | b64decode | replace('\n', '')!=  app_version }}"}
+      when: app_version_file.stat.exists
+
+    # Depending on provided parameter this will set e.g. mongodb_will_update: yes/no
+    - name: Set will_update to false because no version file exists
+      set_fact: { "{{ output_fact }}": no }
+      when: not app_version_file.stat.exists
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in update_app_checker on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Finshed update_app_checker on {{ inventory_hostname }}: {{ output_fact }} is {{ hostvars[inventory_hostname][output_fact] }}"
+  tags: ["update_app_check"]
