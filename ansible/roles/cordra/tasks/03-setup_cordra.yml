@@ -1,33 +1,15 @@
 ---
 - name: Setup Cordra on {{ inventory_hostname }}
   block:
-#    - name: Download and unarchive Cordra-x.x.x from cordra.org on {{ inventory_hostname }}
-#      unarchive:
-#        src: "{{ cordra.distribution_url }}"
-#        remote_src: yes
-#        dest: "{{ server.apps_dir }}"
-#        creates: "{{ cordra.dir  }}"
-#        owner: "{{ server.user }}"
-#        group: "{{ server.group }}"
-#      register: cordra_download
-    - name: Download CORDRA from AWSS3 on {{ inventory_hostname }}
-      aws_s3:
-        bucket: dissco-cordra-distributions
-        object: cordra-2.0.0-distribution-fran.zip
-        dest: /tmp/cordra-2.0.0-distribution-fran.zip
-        mode: get
-        aws_access_key: "{{ server.aws_conf.access_key_id }}"
-        aws_secret_key: "{{ server.aws_conf.secret_access_key }}"
-      register: cordra_download
-
-    - name: Unarchive CORDRA on {{ inventory_hostname }}
+    - name: Download and unarchive Cordra-x.x.x from cordra.org on {{ inventory_hostname }}
       unarchive:
-        src: /tmp/cordra-2.0.0-distribution-fran.zip
+        src: "{{ cordra.distribution_url }}"
+        remote_src: yes
         dest: "{{ server.apps_dir }}"
-        creates: "{{ cordra.dir }}"
+        creates: "{{ cordra.dir  }}"
         owner: "{{ server.user }}"
         group: "{{ server.group }}"
-      when: cordra_download.changed
+      register: cordra_download
 
     - name: Create symbolic link between cordra-x.x.x and cordra directory on {{ inventory_hostname }}
       shell:
