@@ -4,6 +4,7 @@
 # Variables server_user and conf (json) should be provided as extra-vars when running ansible
 server:
   apps_dir: /opt
+  apps_version_file_suffix: -installed-version.txt
   user: "{{ server_user }}"
   group: "{{ server_user }}"
   conf: "{{ software_config }}"
@@ -13,6 +14,7 @@ server:
   restore_db_backup_after_setup: "{{ deployment_config['restore_db_backup_after_setup'] }}"
 
 cordra:
+  version: 2.3.0
   dir: "{{ server.apps_dir + '/cordra' }}"
   distribution_url: https://www.cordra.org/assets/sw/cordra-2.3.0-distribution.zip
   admin_password: "{{ server.conf.cordra.admin_password }}"
@@ -31,7 +33,6 @@ cordra:
     host_ip: "{{ hostvars['cordra_nsidr_server']['ansible_host'] }}"
     handleServer_host: "{{ hostvars['cordra_nsidr_server']['ansible_host'] }}"
     base_uri: "http://{{  '' + server.domain + ':8080' + '/' }}"
-    #base_uri: ""
     index_name: "cordra_nsidr"
     db_name: "cordra-nsidr"
     initial_users: "{{ server.conf.cordra.users }}"
@@ -41,7 +42,6 @@ cordra:
     handle_prefix: "{{'prov.994' if deployment_config['environment'] == 'production' else 'test.prov.994'}}"
     host_ip: "{{ hostvars['cordra_prov_server']['ansible_host'] }}"
     handleServer_host: "{{ hostvars['cordra_prov_server']['ansible_host'] }}"
-    #base_uri: "http://{{  'prov.' + server.domain + ':8080' + '/' }}"
     base_uri: ""
     index_name: "cordra_prov"
     db_name: "cordra-prov"
@@ -52,6 +52,7 @@ handle_tool:
   distribution_url: https://www.handle.net/hnr-source/handle-9.2.0-distribution.tar.gz
 
 mongodb:
+  version: 4.2.3
   dir: "{{ server.apps_dir + '/mongodb'}}"
   distribution_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu1804-4.2.3.tgz
   host_ip: "{{ hostvars[groups['db_servers'][0]]['ansible_host'] }}"
@@ -61,7 +62,6 @@ mongodb:
   cordra_db_name: "{{ cordra.cordra_nsidr_server.db_name }}"
   cordra_prov_db_name: "{{ cordra.cordra_prov_server.db_name }}"
   backup: "{{ server.conf.mongodb.backup }}"
-
 
 elk_version: 7.6.0
 

@@ -25,6 +25,40 @@
     - basic
     - node_exporter
 
+- hosts: search_engine_servers
+  gather_facts: yes
+  tasks:
+  - import_tasks: update_app_checker.yml
+    vars:
+      app_dir: "{{ elasticsearch.dir }}"
+      app_version: "{{ elk_version }}"
+      output_fact: elasticsearch_will_update
+
+- hosts: db_servers
+  gather_facts: yes
+  tasks:
+  - import_tasks: update_app_checker.yml
+    vars:
+      app_dir: "{{ mongodb.dir }}"
+      app_version: "{{ mongodb.version }}"
+      output_fact: mongodb_will_update
+
+- hosts: cordra_servers
+  tasks:
+  - name: Stop cordra.service for before update
+    block:
+      - name: Stop cordra.service for before update
+        systemd:
+          name: cordra.service
+          enabled: yes
+          state: stopped
+        when: hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
+    rescue:
+      - debug:
+          msg: "ERROR in trying to stop Cordra.service before DB or search engine update on {{ inventory_hostname }}"
+    become: true
+    become_user: root
+
 - hosts: db_servers
   gather_facts: yes
   roles:

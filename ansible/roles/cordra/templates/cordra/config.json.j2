@@ -28,22 +28,22 @@
       "password": "{{ elasticsearch.elastic_password }}",
       "indexName": "{{ cordra[instance_type].index_name }}",
       "index.mapping.total_fields.limit": "{{ elasticsearch.index_mapping_total_fields_limits }}",
-      "mappings": {
-          "properties": {
-            "metadata/createdOn": {
-              "type": "date",
-              "format": "epoch_millis"
+      "mappings": "{
+          'properties': {
+            'metadata/createdOn': {
+              'type': 'date',
+              'format': 'epoch_millis'
             },
-            "metadata/publishedOn": {
-              "type": "date",
-              "format": "epoch_millis"
+            'metadata/publishedOn': {
+              'type': 'date',
+              'format': 'epoch_millis'
             },
-            "metadata/modifiedOn": {
-                "type": "date",
-                "format": "epoch_millis"
+            'metadata/modifiedOn': {
+                'type': 'date',
+                'format': 'epoch_millis'
             }
           }
-      }
+      }"
     }
   }
 }

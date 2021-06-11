@@ -25,6 +25,12 @@
         creates: "{{ mongodb.dir }}"
       when: mongodb_download.changed
 
+    - name: Persist installed mongodb version in file for update control
+      copy:
+        dest: "{{ mongodb.dir + server.apps_version_file_suffix }}"
+        content: "{{ mongodb.version }}"
+        force: no
+
     - name: Create Mongodb "conf", "log" and "data" directories on {{ inventory_hostname }}
       file:
         path: "{{item}}"
@@ -69,19 +75,18 @@
         src: systemd/mongodb.service.j2
         dest: /etc/systemd/system/mongodb.service
       when: mongodb_download.changed
-      register: mongodb_service
 
     - name: Force systemd to reload configs on {{ inventory_hostname }}
       systemd:
         daemon_reload: yes
-      when: mongodb_service.changed
+      when: mongodb_download.changed
 
     - name: Enable/Start Mongodb service on {{ inventory_hostname }}
       systemd:
         name: mongodb.service
         enabled: yes
         state: started
-      when: mongodb_service.changed
+      when: mongodb_download.changed
 
   become: true
   become_user: root

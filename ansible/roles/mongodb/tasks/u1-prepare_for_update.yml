@@ -1,0 +1,47 @@
+---
+- name: Prepare for updating {{ role_path }} on {{ inventory_hostname }}
+  block:
+    - name: Manually invoke script to backup the database to AWS
+      shell:
+        cmd: "{{ server.apps_dir }}/mongodb_backup/mongodb-s3-backup.sh > {{ server.apps_dir }}/mongodb_backup/mongodb-s3-backup.log"
+      become_user: "{{ server.user }}"
+
+    - name: Stop mondb.service on {{ inventory_hostname }}
+      systemd:
+        name: mongodb.service
+        enabled: yes
+        state: stopped
+
+    - name: Find existing application mongodb-X.X.X and output the path
+      shell:
+        cmd: find {{ server.apps_dir }} -maxdepth 1 -type d -iname 'mongodb-*'
+      register: found_app_dir_abs_path
+
+    - name: Assert that exactly one directory was found to delete
+      assert:
+        that: found_app_dir_abs_path.stdout_lines | length == 1
+
+    - name: Delete current installation directory {{ role_path }} on {{ inventory_hostname }}
+      file:
+        state: absent
+        path: "{{ found_app_dir_abs_path.stdout }}"
+
+    - name: Delete symlink to installation directory
+      file:
+        state: absent
+        path: "{{ mongodb.dir }}"
+
+    - name: Delete stored version file of {{ role_path }}
+      file:
+        state: absent
+        path: "{{ mongodb.dir + server.apps_version_file_suffix}}"
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in prepare for updating {{ role_path }} on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Finsihed prepare for updating {{ role_path }} on {{ inventory_hostname }}"
+  tags: ["prepare_for_update"]

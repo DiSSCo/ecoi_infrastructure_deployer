@@ -6,6 +6,11 @@
     - import_tasks: 02-configure_network.yml
       tags: [configure_network]
 
+    # mongodb_will_update was initially generated as a fact in site.yml
+    - import_tasks: u1-prepare_for_update.yml
+      when: mongodb_will_update
+      tags: [prepare_for_update]
+
     - import_tasks: 03-setup_mongodb.yml
       tags: [setup_mongodb]
 

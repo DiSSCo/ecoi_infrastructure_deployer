@@ -1,15 +1,33 @@
 ---
 - name: Setup Cordra on {{ inventory_hostname }}
   block:
-    - name: Download and unarchive Cordra-x.x.x from cordra.org on {{ inventory_hostname }}
+#    - name: Download and unarchive Cordra-x.x.x from cordra.org on {{ inventory_hostname }}
+#      unarchive:
+#        src: "{{ cordra.distribution_url }}"
+#        remote_src: yes
+#        dest: "{{ server.apps_dir }}"
+#        creates: "{{ cordra.dir  }}"
+#        owner: "{{ server.user }}"
+#        group: "{{ server.group }}"
+#      register: cordra_download
+    - name: Download CORDRA from AWSS3 on {{ inventory_hostname }}
+      aws_s3:
+        bucket: dissco-cordra-distributions
+        object: cordra-2.0.0-distribution-fran.zip
+        dest: /tmp/cordra-2.0.0-distribution-fran.zip
+        mode: get
+        aws_access_key: "{{ server.aws_conf.access_key_id }}"
+        aws_secret_key: "{{ server.aws_conf.secret_access_key }}"
+      register: cordra_download
+
+    - name: Unarchive CORDRA on {{ inventory_hostname }}
       unarchive:
-        src: "{{ cordra.distribution_url }}"
-        remote_src: yes
+        src: /tmp/cordra-2.0.0-distribution-fran.zip
         dest: "{{ server.apps_dir }}"
-        creates: "{{ cordra.dir  }}"
+        creates: "{{ cordra.dir }}"
         owner: "{{ server.user }}"
         group: "{{ server.group }}"
-      register: cordra_download
+      when: cordra_download.changed
 
     - name: Create symbolic link between cordra-x.x.x and cordra directory on {{ inventory_hostname }}
       shell:
@@ -17,6 +35,12 @@
         chdir: "{{ server.apps_dir }}"
         creates: "{{ cordra.dir }}"
       when: cordra_download.changed
+
+    - name: Persist installed cordra version in file for update control
+      copy:
+        dest: "{{ cordra.dir + server.apps_version_file_suffix }}"
+        content: "{{ cordra.version }}"
+        force: no
 
     - name: Setup Cordra config files (config.json and repoInit.json) on {{ inventory_hostname }}
       template:
@@ -144,32 +168,35 @@
         src: systemd/cordra.service.j2
         dest: /etc/systemd/system/cordra.service
       when: cordra_download.changed
-      register: cordra_service
 
     - name: Force systemd to reload configs on {{ inventory_hostname }}
       systemd:
         daemon_reload: yes
-      when: cordra_service.changed
+      when: cordra_download.changed
 
     - name: Enable/Start Cordra service on {{ inventory_hostname }}
       systemd:
         name: cordra.service
         enabled: yes
         state: started
-      when: cordra_service.changed
+      # In case of DB or elastic search updates cordra.service was stopped beforehand
+      when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
 
     - pause:
         minutes: 1
+      when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
 
     # Restart Cordra as initial start doesn't have the doip service
     - name: Restart Cordra service on {{ inventory_hostname }}
       systemd:
         name: cordra.service
         state: restarted
-      when: cordra_service.changed
+      # In case of DB or elastic search updates cordra.service was stopped beforehand
+      when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
 
     - pause:
         minutes: 1
+      when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
 
     # import the inital data (need to do it twice as the first import only insert the first object)
     - name: Run DOIP commands to loading intial data on {{ inventory_hostname }}
@@ -182,7 +209,7 @@
         - "openssl s_client -connect {{ cordra[instance_type].host_ip }}:{{ cordra.doip_port }} -ign_eof < doip_load_initial_data.txt &"
         - "sleep 60"
       become_user: "{{ server.user }}"
-      when: cordra_service.changed
+      when: cordra_download.changed
 
   become: true
   become_user: root
