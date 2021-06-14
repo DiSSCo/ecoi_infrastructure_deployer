@@ -96,32 +96,36 @@ kibana:
   host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
   http_port: 5601
 
+prometheus_version: 2.15.2
 prometheus:
   dir: "{{ server.apps_dir + '/prometheus' }}"
-  distribution_url: https://github.com/prometheus/prometheus/releases/download/v2.15.2/prometheus-2.15.2.linux-amd64.tar.gz
+  distribution_url: https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz
   host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
   http_port: 9090
   http_internal_port: 9091
   admin_password: "{{ server.conf.prometheus.admin_password }}"
 
+node_exporter_version: 0.18.1
 node_exporter:
   dir: "{{ server.apps_dir + '/node_exporter' }}"
-  distribution_url: https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-0.18.1.linux-amd64.tar.gz
+  distribution_url: https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
   http_port: 9100
   http_internal_port: 9101
   admin_password: "{{ server.conf.prometheus.admin_password }}"
 
+blackbox_exporter_version: 0.16.0
 blackbox_exporter:
   dir: "{{ server.apps_dir + '/blackbox_exporter' }}"
-  distribution_url: https://github.com/prometheus/blackbox_exporter/releases/download/v0.16.0/blackbox_exporter-0.16.0.linux-amd64.tar.gz
+  distribution_url: https://github.com/prometheus/blackbox_exporter/releases/download/v{{ blackbox_exporter_version }}/blackbox_exporter-{{ blackbox_exporter_version }}.linux-amd64.tar.gz
   host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
   http_port: 9115
   http_internal_port: 9116
   admin_password: "{{ server.conf.prometheus.admin_password }}"
 
+grafana_version: 6.6.0
 grafana:
   dir: "{{ server.apps_dir + '/grafana' }}"
-  distribution_url: https://dl.grafana.com/oss/release/grafana-6.6.0.linux-amd64.tar.gz
+  distribution_url: https://dl.grafana.com/oss/release/grafana-{{ grafana_version }}.linux-amd64.tar.gz
   host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
   http_port: 80
   https_port: 443

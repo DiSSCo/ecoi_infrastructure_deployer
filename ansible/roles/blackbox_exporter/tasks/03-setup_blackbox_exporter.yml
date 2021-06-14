@@ -28,6 +28,12 @@
         creates: "{{ blackbox_exporter.dir }}"
       when: blackbox_exporter_download.changed
 
+    - name: Persist installed blackbox_exporter version in file for update control
+      copy:
+        dest: "{{ blackbox_exporter.dir + server.apps_version_file_suffix }}"
+        content: "{{ blackbox_exporter_version }}"
+        force: no
+
     - name: Configure Blackbox exporter
       template:
         src: "blackbox_exporter/blackbox.yml.j2"
@@ -39,19 +45,18 @@
         src: systemd/blackbox_exporter.service.j2
         dest: /etc/systemd/system/blackbox_exporter.service
       when: blackbox_exporter_download.changed
-      register: blackbox_exporter_service
 
     - name: Force systemd to reload configs on {{ inventory_hostname }}
       systemd:
         daemon_reload: yes
-      when: blackbox_exporter_service.changed
+      when: blackbox_exporter_download.changed
 
     - name: Enable/Start Blackbox Exporter service on {{ inventory_hostname }}
       systemd:
         name: blackbox_exporter.service
         state: started
         enabled: yes
-      when: blackbox_exporter_service.changed
+      when: blackbox_exporter_download.changed
 
   become: true
   become_user: root

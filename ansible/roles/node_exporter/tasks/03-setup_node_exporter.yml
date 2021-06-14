@@ -28,24 +28,29 @@
         creates: "{{ node_exporter.dir }}"
       when: node_exporter_download.changed
 
+    - name: Persist installed node_exporter version in file for update control
+      copy:
+        dest: "{{ node_exporter.dir + server.apps_version_file_suffix }}"
+        content: "{{ node_exporter_version }}"
+        force: no
+
     - name: Config Node Exporter service on {{ inventory_hostname }}
       template:
         src: systemd/node_exporter.service.j2
         dest: /etc/systemd/system/node_exporter.service
       when: node_exporter_download.changed
-      register: node_exporter_service
 
     - name: Force systemd to reload configs on {{ inventory_hostname }}
       systemd:
         daemon_reload: yes
-      when: node_exporter_service.changed
+      when: node_exporter_download.changed
 
     - name: Enable/Start Node Exporter service on {{ inventory_hostname }}
       systemd:
         name: node_exporter.service
         enabled: yes
         state: started
-      when: node_exporter_service.changed
+      when: node_exporter_download.changed
 
   become: true
   become_user: root

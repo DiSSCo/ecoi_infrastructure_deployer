@@ -28,6 +28,12 @@
         creates: "{{ prometheus.dir }}"
       when: prometheus_download.changed
 
+    - name: Persist installed prometheus_version version in file for update control
+      copy:
+        dest: "{{ prometheus.dir + server.apps_version_file_suffix }}"
+        content: "{{ prometheus_version }}"
+        force: no
+
     - name: Configure Prometheus prometheus.yml on {{ inventory_hostname }}
       template:
         src: "prometheus/prometheus.yml.j2"
@@ -39,19 +45,18 @@
         src: systemd/prometheus.service.j2
         dest: /etc/systemd/system/prometheus.service
       when: prometheus_download.changed
-      register: prometheus_service
 
     - name: Force systemd to reload configs on {{ inventory_hostname }}
       systemd:
         daemon_reload: yes
-      when: prometheus_service.changed
+      when: prometheus_download.changed
 
     - name: Enable/Start Prometheus service on {{ inventory_hostname }}
       systemd:
         name: prometheus.service
         enabled: yes
         state: started
-      when: prometheus_service.changed
+      when: prometheus_download.changed
 
   become: true
   become_user: root

@@ -25,6 +25,12 @@
         creates: "{{ grafana.dir }}"
       when: grafana_download.changed
 
+    - name: Persist installed grafana version in file for update control
+      copy:
+        dest: "{{ grafana.dir + server.apps_version_file_suffix }}"
+        content: "{{ grafana_version }}"
+        force: no
+
     - name: Config Grafana installation on {{ inventory_hostname }}
       template:
         src: "grafana/grafana.ini.j2"
@@ -38,19 +44,18 @@
         src: systemd/grafana.service.j2
         dest: /etc/systemd/system/grafana.service
       when: grafana_download.changed
-      register: grafana_service
 
     - name: Force systemd to reload configs on {{ inventory_hostname }}
       systemd:
         daemon_reload: yes
-      when: grafana_service.changed
+      when: grafana_download.changed
 
     - name: Enable/Start Grafana service on {{ inventory_hostname }}
       systemd:
         name: grafana.service
         enabled: yes
         state: started
-      when: grafana_service.changed
+      when: grafana_download.changed
 
     - name: Create datasources, dashboards and alerts channels on {{ inventory_hostname }}
       uri:
@@ -72,7 +77,7 @@
         - { body: '{{ lookup("template","grafana/dashboards/cordra_nsidr_ds.json.j2") }}', url: '{{ "/api/dashboards/db" }}' }
         - { body: '{{ lookup("template","grafana/dashboards/ecoi_systemd_services.json.j2") }}', url: '{{ "/api/dashboards/db" }}' }
         - { body: '{{ lookup("file","grafana/dashboards/system_status.json") }}', url: '{{ "/api/dashboards/db" }}' }
-      when: grafana_service.changed
+      when: grafana_download.changed
 
   become: true
   become_user: root
