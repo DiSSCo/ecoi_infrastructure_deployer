@@ -13,10 +13,10 @@ server:
   environment: "{{ deployment_config['environment'] }}"
   restore_db_backup_after_setup: "{{ deployment_config['restore_db_backup_after_setup'] }}"
 
+cordra_version: 2.3.0
 cordra:
-  version: 2.3.0
+  distribution_url: https://www.cordra.org/assets/sw/cordra-{{ cordra_version }}-distribution.zip
   dir: "{{ server.apps_dir + '/cordra' }}"
-  distribution_url: https://www.cordra.org/assets/sw/cordra-2.3.0-distribution.zip
   admin_password: "{{ server.conf.cordra.admin_password }}"
   http_port: 80
   http_internal_port: 8080
@@ -51,10 +51,10 @@ handle_tool:
   dir: "{{ server.apps_dir + '/handle'}}"
   distribution_url: https://www.handle.net/hnr-source/handle-9.2.0-distribution.tar.gz
 
+mongodb_version: 4.2.3
 mongodb:
-  version: 4.2.3
+  distribution_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu1804-{{ mongodb_version }}.tgz
   dir: "{{ server.apps_dir + '/mongodb'}}"
-  distribution_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu1804-4.2.3.tgz
   host_ip: "{{ hostvars[groups['db_servers'][0]]['ansible_host'] }}"
   port: 27017
   admin_password: "{{ server.conf.mongodb.admin_password }}"

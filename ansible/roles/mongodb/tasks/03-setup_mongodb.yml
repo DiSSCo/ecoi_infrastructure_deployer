@@ -28,7 +28,7 @@
     - name: Persist installed mongodb version in file for update control
       copy:
         dest: "{{ mongodb.dir + server.apps_version_file_suffix }}"
-        content: "{{ mongodb.version }}"
+        content: "{{ mongodb_version }}"
         force: no
 
     - name: Create Mongodb "conf", "log" and "data" directories on {{ inventory_hostname }}

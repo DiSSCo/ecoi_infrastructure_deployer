@@ -43,5 +43,5 @@
         msg: "ERROR in prepare for updating {{ role_path }} on {{ inventory_hostname }}"
   always:
     - debug:
-        msg: "Finsihed prepare for updating {{ role_path }} on {{ inventory_hostname }}"
+        msg: "Finished prepare for updating {{ role_path }} on {{ inventory_hostname }}"
   tags: ["prepare_for_update"]

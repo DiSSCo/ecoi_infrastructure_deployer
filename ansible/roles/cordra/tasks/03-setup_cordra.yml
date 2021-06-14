@@ -21,7 +21,7 @@
     - name: Persist installed cordra version in file for update control
       copy:
         dest: "{{ cordra.dir + server.apps_version_file_suffix }}"
-        content: "{{ cordra.version }}"
+        content: "{{ cordra_version }}"
         force: no
 
     - name: Setup Cordra config files (config.json and repoInit.json) on {{ inventory_hostname }}

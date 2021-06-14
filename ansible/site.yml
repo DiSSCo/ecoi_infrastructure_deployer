@@ -40,7 +40,7 @@
   - import_tasks: update_app_checker.yml
     vars:
       app_dir: "{{ mongodb.dir }}"
-      app_version: "{{ mongodb.version }}"
+      app_version: "{{ mongodb_version }}"
       output_fact: mongodb_will_update
 
 - hosts: cordra_servers
