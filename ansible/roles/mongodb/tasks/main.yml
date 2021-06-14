@@ -14,7 +14,20 @@
     - import_tasks: 03-setup_mongodb.yml
       tags: [setup_mongodb]
 
-    - import_tasks: 04-backup_mongodb.yml
+    - import_tasks: update_app_checker.yml
+      vars:
+        app_dir: "{{ mongodb.database_tools.dir }}"
+        app_version: "{{ mongodb_database_tools_version }}"
+        output_fact: mongodb_database_tools_will_update
+
+    - import_tasks: u2-prepare_db_tools_for_update.yml
+      when: mongodb_database_tools_will_update
+      tags: [prepare_for_update]
+
+    - import_tasks: 04-setup_mongodb_database_tools.yml
+      tags: [setup_mongodb]
+
+    - import_tasks: 05-backup_mongodb.yml
       tags: [backup_mongodb]
 
   rescue:

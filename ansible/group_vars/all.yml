@@ -49,11 +49,13 @@ cordra:
 
 handle_tool:
   dir: "{{ server.apps_dir + '/handle'}}"
-  distribution_url: https://www.handle.net/hnr-source/handle-9.2.0-distribution.tar.gz
+  distribution_url: https://www.handle.net/hnr-source/handle-9.3.0-distribution.tar.gz
 
-mongodb_version: 4.2.3
+mongodb_version: 4.4.5
+# Since MongoDBv4.4 the tools mongodump and mongorestore come in a separate distribution
+mongodb_database_tools_version: 100.3.0
 mongodb:
-  distribution_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu1804-{{ mongodb_version }}.tgz
+  distribution_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2004-{{ mongodb_version }}.tgz
   dir: "{{ server.apps_dir + '/mongodb'}}"
   host_ip: "{{ hostvars[groups['db_servers'][0]]['ansible_host'] }}"
   port: 27017
@@ -62,6 +64,10 @@ mongodb:
   cordra_db_name: "{{ cordra.cordra_nsidr_server.db_name }}"
   cordra_prov_db_name: "{{ cordra.cordra_prov_server.db_name }}"
   backup: "{{ server.conf.mongodb.backup }}"
+
+  database_tools:
+    dir: "{{ server.apps_dir + '/mongodb-database-tools'}}"
+    distribution_url: https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2004-x86_64-{{ mongodb_database_tools_version }}.tgz
 
 elk_version: 7.13.0
 
