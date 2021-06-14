@@ -63,7 +63,7 @@ mongodb:
   cordra_prov_db_name: "{{ cordra.cordra_prov_server.db_name }}"
   backup: "{{ server.conf.mongodb.backup }}"
 
-elk_version: 7.6.0
+elk_version: 7.13.0
 
 elasticsearch:
   dir: "{{ server.apps_dir + '/elasticsearch'}}"
@@ -80,7 +80,7 @@ elasticsearch:
 
 logstash:
   dir: "{{ server.apps_dir + '/logstash'}}"
-  distribution_url: https://artifacts.elastic.co/downloads/logstash/logstash-{{ elk_version }}.tar.gz
+  distribution_url: https://artifacts.elastic.co/downloads/logstash/logstash-{{ elk_version }}-linux-x86_64.tar.gz
   host_ip: "{{ hostvars[groups['search_engine_servers'][0]]['ansible_host'] }}"
   http_port: 9600
   beat_port: 5044
@@ -96,7 +96,7 @@ kibana:
   host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
   http_port: 5601
 
-prometheus_version: 2.15.2
+prometheus_version: 2.27.1
 prometheus:
   dir: "{{ server.apps_dir + '/prometheus' }}"
   distribution_url: https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz
@@ -105,7 +105,7 @@ prometheus:
   http_internal_port: 9091
   admin_password: "{{ server.conf.prometheus.admin_password }}"
 
-node_exporter_version: 0.18.1
+node_exporter_version: 1.1.2
 node_exporter:
   dir: "{{ server.apps_dir + '/node_exporter' }}"
   distribution_url: https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
@@ -113,7 +113,7 @@ node_exporter:
   http_internal_port: 9101
   admin_password: "{{ server.conf.prometheus.admin_password }}"
 
-blackbox_exporter_version: 0.16.0
+blackbox_exporter_version: 0.19.0
 blackbox_exporter:
   dir: "{{ server.apps_dir + '/blackbox_exporter' }}"
   distribution_url: https://github.com/prometheus/blackbox_exporter/releases/download/v{{ blackbox_exporter_version }}/blackbox_exporter-{{ blackbox_exporter_version }}.linux-amd64.tar.gz
@@ -122,7 +122,7 @@ blackbox_exporter:
   http_internal_port: 9116
   admin_password: "{{ server.conf.prometheus.admin_password }}"
 
-grafana_version: 6.6.0
+grafana_version: 8.0.2
 grafana:
   dir: "{{ server.apps_dir + '/grafana' }}"
   distribution_url: https://dl.grafana.com/oss/release/grafana-{{ grafana_version }}.linux-amd64.tar.gz
