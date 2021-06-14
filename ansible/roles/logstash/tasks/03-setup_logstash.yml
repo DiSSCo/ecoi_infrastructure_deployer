@@ -25,6 +25,12 @@
         creates: "{{ logstash.dir }}"
       when: logstash_download.changed
 
+    - name: Persist installed logstash version in file for update control
+      copy:
+        dest: "{{ logstash.dir + server.apps_version_file_suffix }}"
+        content: "{{ elk_version }}"
+        force: no
+
     - name: Create Cordra Logstash pipeline on {{ inventory_hostname }}
       template:
         src: "logstash/cordra_pipeline.conf.j2"
@@ -38,19 +44,18 @@
         src: systemd/logstash.service.j2
         dest: /etc/systemd/system/logstash.service
       when: logstash_download.changed
-      register: logstash_service
 
     - name: Force systemd to reload configs on {{ inventory_hostname }}
       systemd:
         daemon_reload: yes
-      when: logstash_service.changed
+      when: logstash_download.changed
 
     - name: Enable/Start Logstash service on {{ inventory_hostname }}
       systemd:
         name: logstash.service
         enabled: yes
         state: started
-      when: logstash_service.changed
+      when: logstash_download.changed
 
   become: true
   become_user: root
