@@ -4,6 +4,7 @@
 # Variables server_user and conf (json) should be provided as extra-vars when running ansible
 server:
   apps_dir: /opt
+  apps_version_file_suffix: -installed-version.txt
   user: "{{ server_user }}"
   group: "{{ server_user }}"
   conf: "{{ software_config }}"
@@ -12,9 +13,10 @@ server:
   environment: "{{ deployment_config['environment'] }}"
   restore_db_backup_after_setup: "{{ deployment_config['restore_db_backup_after_setup'] }}"
 
+cordra_version: 2.3.0
 cordra:
+  distribution_url: https://www.cordra.org/assets/sw/cordra-{{ cordra_version }}-distribution.zip
   dir: "{{ server.apps_dir + '/cordra' }}"
-  distribution_url: https://www.cordra.org/assets/sw/cordra-2.3.0-distribution.zip
   admin_password: "{{ server.conf.cordra.admin_password }}"
   http_port: 80
   http_internal_port: 8080
@@ -31,7 +33,6 @@ cordra:
     host_ip: "{{ hostvars['cordra_nsidr_server']['ansible_host'] }}"
     handleServer_host: "{{ hostvars['cordra_nsidr_server']['ansible_host'] }}"
     base_uri: "http://{{  '' + server.domain + ':8080' + '/' }}"
-    #base_uri: ""
     index_name: "cordra_nsidr"
     db_name: "cordra-nsidr"
     initial_users: "{{ server.conf.cordra.users }}"
@@ -41,7 +42,6 @@ cordra:
     handle_prefix: "{{'prov.994' if deployment_config['environment'] == 'production' else 'test.prov.994'}}"
     host_ip: "{{ hostvars['cordra_prov_server']['ansible_host'] }}"
     handleServer_host: "{{ hostvars['cordra_prov_server']['ansible_host'] }}"
-    #base_uri: "http://{{  'prov.' + server.domain + ':8080' + '/' }}"
     base_uri: ""
     index_name: "cordra_prov"
     db_name: "cordra-prov"
@@ -49,11 +49,14 @@ cordra:
 
 handle_tool:
   dir: "{{ server.apps_dir + '/handle'}}"
-  distribution_url: https://www.handle.net/hnr-source/handle-9.2.0-distribution.tar.gz
+  distribution_url: https://www.handle.net/hnr-source/handle-9.3.0-distribution.tar.gz
 
+mongodb_version: 4.4.5
+# Since MongoDBv4.4 the tools mongodump and mongorestore come in a separate distribution
+mongodb_database_tools_version: 100.3.0
 mongodb:
+  distribution_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2004-{{ mongodb_version }}.tgz
   dir: "{{ server.apps_dir + '/mongodb'}}"
-  distribution_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu1804-4.2.3.tgz
   host_ip: "{{ hostvars[groups['db_servers'][0]]['ansible_host'] }}"
   port: 27017
   admin_password: "{{ server.conf.mongodb.admin_password }}"
@@ -62,8 +65,11 @@ mongodb:
   cordra_prov_db_name: "{{ cordra.cordra_prov_server.db_name }}"
   backup: "{{ server.conf.mongodb.backup }}"
 
+  database_tools:
+    dir: "{{ server.apps_dir + '/mongodb-database-tools'}}"
+    distribution_url: https://fastdl.mongodb.org/tools/db/mongodb-database-tools-ubuntu2004-x86_64-{{ mongodb_database_tools_version }}.tgz
 
-elk_version: 7.6.0
+elk_version: 7.13.0
 
 elasticsearch:
   dir: "{{ server.apps_dir + '/elasticsearch'}}"
@@ -80,7 +86,7 @@ elasticsearch:
 
 logstash:
   dir: "{{ server.apps_dir + '/logstash'}}"
-  distribution_url: https://artifacts.elastic.co/downloads/logstash/logstash-{{ elk_version }}.tar.gz
+  distribution_url: https://artifacts.elastic.co/downloads/logstash/logstash-{{ elk_version }}-linux-x86_64.tar.gz
   host_ip: "{{ hostvars[groups['search_engine_servers'][0]]['ansible_host'] }}"
   http_port: 9600
   beat_port: 5044
@@ -96,32 +102,36 @@ kibana:
   host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
   http_port: 5601
 
+prometheus_version: 2.27.1
 prometheus:
   dir: "{{ server.apps_dir + '/prometheus' }}"
-  distribution_url: https://github.com/prometheus/prometheus/releases/download/v2.15.2/prometheus-2.15.2.linux-amd64.tar.gz
+  distribution_url: https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz
   host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
   http_port: 9090
   http_internal_port: 9091
   admin_password: "{{ server.conf.prometheus.admin_password }}"
 
+node_exporter_version: 1.1.2
 node_exporter:
   dir: "{{ server.apps_dir + '/node_exporter' }}"
-  distribution_url: https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-0.18.1.linux-amd64.tar.gz
+  distribution_url: https://github.com/prometheus/node_exporter/releases/download/v{{ node_exporter_version }}/node_exporter-{{ node_exporter_version }}.linux-amd64.tar.gz
   http_port: 9100
   http_internal_port: 9101
   admin_password: "{{ server.conf.prometheus.admin_password }}"
 
+blackbox_exporter_version: 0.19.0
 blackbox_exporter:
   dir: "{{ server.apps_dir + '/blackbox_exporter' }}"
-  distribution_url: https://github.com/prometheus/blackbox_exporter/releases/download/v0.16.0/blackbox_exporter-0.16.0.linux-amd64.tar.gz
+  distribution_url: https://github.com/prometheus/blackbox_exporter/releases/download/v{{ blackbox_exporter_version }}/blackbox_exporter-{{ blackbox_exporter_version }}.linux-amd64.tar.gz
   host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
   http_port: 9115
   http_internal_port: 9116
   admin_password: "{{ server.conf.prometheus.admin_password }}"
 
+grafana_version: 8.0.2
 grafana:
   dir: "{{ server.apps_dir + '/grafana' }}"
-  distribution_url: https://dl.grafana.com/oss/release/grafana-6.6.0.linux-amd64.tar.gz
+  distribution_url: https://dl.grafana.com/oss/release/grafana-{{ grafana_version }}.linux-amd64.tar.gz
   host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
   http_port: 80
   https_port: 443

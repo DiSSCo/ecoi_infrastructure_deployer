@@ -28,47 +28,35 @@
         creates: "{{ prometheus.dir }}"
       when: prometheus_download.changed
 
+    - name: Persist installed prometheus_version version in file for update control
+      copy:
+        dest: "{{ prometheus.dir + server.apps_version_file_suffix }}"
+        content: "{{ prometheus_version }}"
+        force: no
+
     - name: Configure Prometheus prometheus.yml on {{ inventory_hostname }}
       template:
         src: "prometheus/prometheus.yml.j2"
         dest: "{{ prometheus.dir + '/prometheus.yml'}}"
       when: prometheus_download.changed
 
-#    - name: Start Prometheus on {{ inventory_hostname }}
-#      shell:
-#        cmd: nohup ./prometheus --config.file ./prometheus.yml --web.console.templates ./consoles --web.console.libraries ./console_libraries --web.listen-address='127.0.0.1:{{ prometheus.http_internal_port }}' >> ./prometheus.log 2>&1 &
-#        chdir: "{{ prometheus.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: prometheus_download.changed
-#
-#    - name: Wait for prometheus http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
-#      wait_for:
-#        port: "{{ prometheus.http_internal_port }}"
-#        delay: 5
-#        timeout: 300
-#        state: started
-#        msg: "Prometheus HTTP PORT is not Listening"
-#      when: prometheus_download.changed
-#      register: prometheus_download_up
-
     - name: Config Prometheus service on {{ inventory_hostname }}
       template:
         src: systemd/prometheus.service.j2
         dest: /etc/systemd/system/prometheus.service
       when: prometheus_download.changed
-      register: prometheus_service
 
     - name: Force systemd to reload configs on {{ inventory_hostname }}
       systemd:
         daemon_reload: yes
-      when: prometheus_service.changed
+      when: prometheus_download.changed
 
     - name: Enable/Start Prometheus service on {{ inventory_hostname }}
       systemd:
         name: prometheus.service
         enabled: yes
         state: started
-      when: prometheus_service.changed
+      when: prometheus_download.changed
 
   become: true
   become_user: root

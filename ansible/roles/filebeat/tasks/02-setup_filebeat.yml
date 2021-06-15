@@ -25,37 +25,35 @@
         creates: "{{ filebeat.dir }}"
       when: filebeat_download.changed
 
+    - name: Persist installed filebeat version in file for update control
+      copy:
+        dest: "{{ filebeat.dir + server.apps_version_file_suffix }}"
+        content: "{{ elk_version }}"
+        force: no
+
     - name: Config Filebeat filebeat.yml on {{ inventory_hostname }}
       template:
         src: "filebeat/filebeat.yml.j2"
         dest: "{{ filebeat.dir + '/filebeat.yml'}}"
       when: filebeat_download.changed
 
-#    - name: Start Filebeat on {{ inventory_hostname }}
-#      shell:
-#        cmd: nohup ./filebeat run -e >> filebeat.log 2>&1 &
-#        chdir: "{{ filebeat.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: filebeat_download.changed
-
     - name: Config Filebeat service on {{ inventory_hostname }}
       template:
         src: systemd/filebeat.service.j2
         dest: /etc/systemd/system/filebeat.service
       when: filebeat_download.changed
-      register: filebeat_service
 
     - name: Force systemd to reload configs on {{ inventory_hostname }}
       systemd:
         daemon_reload: yes
-      when: filebeat_service.changed
+      when: filebeat_download.changed
 
     - name: Enable/Start Filebeat service on {{ inventory_hostname }}
       systemd:
         name: filebeat.service
         enabled: yes
         state: started
-      when: filebeat_service.changed
+      when: filebeat_download.changed
 
   become: true
   become_user: root

@@ -18,6 +18,12 @@
         creates: "{{ cordra.dir }}"
       when: cordra_download.changed
 
+    - name: Persist installed cordra version in file for update control
+      copy:
+        dest: "{{ cordra.dir + server.apps_version_file_suffix }}"
+        content: "{{ cordra_version }}"
+        force: no
+
     - name: Setup Cordra config files (config.json and repoInit.json) on {{ inventory_hostname }}
       template:
         src: "{{ item.src }}"
@@ -65,6 +71,9 @@
         - { src: '{{ "cordra/" + instance_type + "/doec_config.properties.j2" }}', dest: '{{ cordra.dir + "/data/doec_config.properties" }}' }
       when: cordra_download.changed and instance_type != 'cordra_prov_server'
 
+    # java_cert module per default replaces an existing certificate in the keystore if
+    # the new cert is different. Attention: ansible community package > 2.5.2 is needed
+    # This task should therefore not have a conditional "when" block
     - name: Import SSL certificate from search_engine_server to the default java cacerts keystore on {{ inventory_hostname }}
       java_cert:
         cert_alias: search_engine_server
@@ -72,7 +81,6 @@
         keystore_path: "{{ java_home + '/jre/lib/security/cacerts' }}"
         keystore_pass: changeit
         state: present
-      when: cordra_download.changed
 
     - name: Copy Cordra handle keys on {{ inventory_hostname }}
       copy:
@@ -137,54 +145,40 @@
         - { src: 'cordra/delete_handle_ids_from_handle_server.sh.j2', dest: '{{ cordra.dir }}/bin' }
       when: cordra_download.changed and cordra.handleServer_enabled
 
-    # - name: Start Cordra on {{ inventory_hostname }}
-    #  shell:
-    #    cmd: nohup ./startup >> ./cordra.log 2>&1 &
-    #    chdir: "{{ cordra.dir }}"
-    #  become_user: "{{ server.user }}"
-    #  when: cordra_download.changed
-    #  register: cordra_up
-
-    # - name: Wait for http cordra port to become open on the host, don't start checking for 5 seconds on {{ inventory_hostname }}
-    #  wait_for:
-    #    port: "{{ cordra.http_internal_port }}"
-    #    delay: 5
-    #    timeout: 300
-    #    state: started
-    #    msg: "CORDRA HTTP PORT is not Listening"
-    #  when: cordra_download.changed
-
     - name: Config Cordra service on {{ inventory_hostname }}
       template:
         src: systemd/cordra.service.j2
         dest: /etc/systemd/system/cordra.service
       when: cordra_download.changed
-      register: cordra_service
 
     - name: Force systemd to reload configs on {{ inventory_hostname }}
       systemd:
         daemon_reload: yes
-      when: cordra_service.changed
+      when: cordra_download.changed
 
     - name: Enable/Start Cordra service on {{ inventory_hostname }}
       systemd:
         name: cordra.service
         enabled: yes
         state: started
-      when: cordra_service.changed
+      # In case of DB or elastic search updates cordra.service was stopped beforehand
+      when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
 
     - pause:
         minutes: 1
+      when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
 
     # Restart Cordra as initial start doesn't have the doip service
     - name: Restart Cordra service on {{ inventory_hostname }}
       systemd:
         name: cordra.service
         state: restarted
-      when: cordra_service.changed
+      # In case of DB or elastic search updates cordra.service was stopped beforehand
+      when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
 
     - pause:
         minutes: 1
+      when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
 
     # import the inital data (need to do it twice as the first import only insert the first object)
     - name: Run DOIP commands to loading intial data on {{ inventory_hostname }}
@@ -197,7 +191,7 @@
         - "openssl s_client -connect {{ cordra[instance_type].host_ip }}:{{ cordra.doip_port }} -ign_eof < doip_load_initial_data.txt &"
         - "sleep 60"
       become_user: "{{ server.user }}"
-      when: cordra_service.changed
+      when: cordra_download.changed
 
   become: true
   become_user: root

@@ -1,0 +1,42 @@
+---
+- name: Prepare for updating {{ role_path }} on {{ inventory_hostname }}
+  block:
+    - name: Stop cordra.service on {{ inventory_hostname }}
+      systemd:
+        name: cordra.service
+        enabled: yes
+        state: stopped
+
+    - name: Find existing application cordra-X.X.X and output the path
+      shell:
+        cmd: find {{ server.apps_dir }} -maxdepth 1 -type d -iname 'cordra-*'
+      register: found_app_dir_abs_path
+
+    - name: Assert that exactly one directory was found to delete
+      assert:
+        that: found_app_dir_abs_path.stdout_lines | length == 1
+
+    - name: Delete current installation directory {{ role_path }} on {{ inventory_hostname }}
+      file:
+        state: absent
+        path: "{{ found_app_dir_abs_path.stdout }}"
+
+    - name: Delete symlink to installation directory
+      file:
+        state: absent
+        path: "{{ cordra.dir }}"
+
+    - name: Delete stored version file of {{ role_path }}
+      file:
+        state: absent
+        path: "{{ cordra.dir + server.apps_version_file_suffix}}"
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in prepare for updating {{ role_path }} on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Finished prepare for updating {{ role_path }} on {{ inventory_hostname }}"
+  tags: ["prepare_for_update"]

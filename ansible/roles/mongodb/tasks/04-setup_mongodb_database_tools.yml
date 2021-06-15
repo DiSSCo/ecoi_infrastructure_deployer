@@ -1,0 +1,42 @@
+---
+- name: Setup Mongodb database tools on {{ inventory_hostname }}
+  block:
+    # Download MongoDB distribution and unzip in /opt as zip has folder mongodb-x.x.x
+    - name: Download and unarchive Mongodb database tools on {{ inventory_hostname }}
+      unarchive:
+        src: "{{ mongodb.database_tools.distribution_url }}"
+        remote_src: yes
+        dest: "{{ server.apps_dir }}"
+        creates: "{{ mongodb.database_tools.dir }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      register: mongodb_tools_download
+
+    - name: Fix permissions to mongodb dir on {{ inventory_hostname }}
+      shell:
+        cmd: chown -R "{{ server.user }}":"{{ server.group }}" "{{ mongodb.database_tools.dir }}"-*
+        warn: false
+      when: mongodb_tools_download.changed
+
+    - name: Create simbolic link between mongodb-database-tools-x.x.x and mongodb directory on {{ inventory_hostname }}
+      shell:
+        cmd: find . -maxdepth 1 -type d -iname 'mongodb-database-tools-*' -exec ln -s {} "{{ mongodb.database_tools.dir }}" \;
+        chdir: "{{ server.apps_dir }}"
+        creates: "{{ mongodb.database_tools.dir }}"
+      when: mongodb_tools_download.changed
+
+    - name: Persist installed mongodb database tools version in file for update control
+      copy:
+        dest: "{{ mongodb.database_tools.dir + server.apps_version_file_suffix }}"
+        content: "{{ mongodb_database_tools_version }}"
+        force: no
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setup Mongodb database tools"
+  always:
+    - debug:
+        msg: "Setup Mongodb database tools FINISHED"
+  tags: ["install_software"]

@@ -25,6 +25,12 @@
         creates: "{{ grafana.dir }}"
       when: grafana_download.changed
 
+    - name: Persist installed grafana version in file for update control
+      copy:
+        dest: "{{ grafana.dir + server.apps_version_file_suffix }}"
+        content: "{{ grafana_version }}"
+        force: no
+
     - name: Config Grafana installation on {{ inventory_hostname }}
       template:
         src: "grafana/grafana.ini.j2"
@@ -33,41 +39,23 @@
         group: "{{ server.group }}"
       when: grafana_download.changed
 
-#    - name: Start Grafana using config file on {{ inventory_hostname }}
-#      shell:
-#        cmd: nohup ./bin/grafana-server --config ./conf/grafana.ini >> ./grafana.log 2>&1 &
-#        chdir: "{{ grafana.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: grafana_download.changed
-#
-#    - name: Wait for Grafana http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
-#      wait_for:
-#        port: "{{ grafana.http_internal_port }}"
-#        delay: 5
-#        timeout: 300
-#        state: started
-#        msg: "Grafana HTTP PORT is not Listening"
-#      when: grafana_download.changed
-#      register: grafana_up
-
     - name: Config Grafana service on {{ inventory_hostname }}
       template:
         src: systemd/grafana.service.j2
         dest: /etc/systemd/system/grafana.service
       when: grafana_download.changed
-      register: grafana_service
 
     - name: Force systemd to reload configs on {{ inventory_hostname }}
       systemd:
         daemon_reload: yes
-      when: grafana_service.changed
+      when: grafana_download.changed
 
     - name: Enable/Start Grafana service on {{ inventory_hostname }}
       systemd:
         name: grafana.service
         enabled: yes
         state: started
-      when: grafana_service.changed
+      when: grafana_download.changed
 
     - name: Create datasources, dashboards and alerts channels on {{ inventory_hostname }}
       uri:
@@ -89,7 +77,7 @@
         - { body: '{{ lookup("template","grafana/dashboards/cordra_nsidr_ds.json.j2") }}', url: '{{ "/api/dashboards/db" }}' }
         - { body: '{{ lookup("template","grafana/dashboards/ecoi_systemd_services.json.j2") }}', url: '{{ "/api/dashboards/db" }}' }
         - { body: '{{ lookup("file","grafana/dashboards/system_status.json") }}', url: '{{ "/api/dashboards/db" }}' }
-      when: grafana_service.changed
+      when: grafana_download.changed
 
   become: true
   become_user: root

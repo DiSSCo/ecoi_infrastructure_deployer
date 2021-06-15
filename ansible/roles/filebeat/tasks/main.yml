@@ -3,6 +3,16 @@
     - import_tasks: 01-prepare_required_packages.yml
       tags: [prepare_packages]
 
+    - import_tasks: update_app_checker.yml
+      vars:
+        app_dir: "{{ filebeat.dir }}"
+        app_version: "{{ elk_version }}"
+        output_fact: filebeat_will_update
+
+    - import_tasks: u1-prepare_for_update.yml
+      when: filebeat_will_update
+      tags: [prepare_for_update]
+
     - import_tasks: 02-setup_filebeat.yml
       tags: [setup_filebeat]
 

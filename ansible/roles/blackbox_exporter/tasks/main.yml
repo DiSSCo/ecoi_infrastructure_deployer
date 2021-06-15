@@ -6,6 +6,16 @@
     - import_tasks: 02-configure_network.yml
       tags: [configure_network]
 
+    - import_tasks: update_app_checker.yml
+      vars:
+        app_dir: "{{ blackbox_exporter.dir }}"
+        app_version: "{{ blackbox_exporter_version }}"
+        output_fact: blackbox_exporter_will_update
+
+    - import_tasks: u1-prepare_for_update.yml
+      when: blackbox_exporter_will_update
+      tags: [prepare_for_update]
+
     - import_tasks: 03-setup_blackbox_exporter.yml
       tags: [setup_blackbox_exporter]
 

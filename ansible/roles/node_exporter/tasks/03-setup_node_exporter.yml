@@ -28,41 +28,29 @@
         creates: "{{ node_exporter.dir }}"
       when: node_exporter_download.changed
 
-#    - name: Start node_exporter on {{ inventory_hostname }}
-#      shell:
-#        cmd: nohup ./node_exporter --collector.systemd --web.listen-address='127.0.0.1:{{ node_exporter.http_internal_port }}' >> ./node_exporter.log 2>&1 &
-#        chdir: "{{ node_exporter.dir }}"
-#      become_user: "{{ server.user }}"
-#      when: node_exporter_download.changed
-#
-#    - name: Wait for node_exporter http port to become open on the box, don't start checking for 5 seconds on {{ inventory_hostname }}
-#      wait_for:
-#        port: "{{ node_exporter.http_internal_port }}"
-#        delay: 5
-#        timeout: 300
-#        state: started
-#        msg: "Node exporter HTTP PORT is not Listening"
-#      when: node_exporter_download.changed
-#      register: node_exporter_up
+    - name: Persist installed node_exporter version in file for update control
+      copy:
+        dest: "{{ node_exporter.dir + server.apps_version_file_suffix }}"
+        content: "{{ node_exporter_version }}"
+        force: no
 
     - name: Config Node Exporter service on {{ inventory_hostname }}
       template:
         src: systemd/node_exporter.service.j2
         dest: /etc/systemd/system/node_exporter.service
       when: node_exporter_download.changed
-      register: node_exporter_service
 
     - name: Force systemd to reload configs on {{ inventory_hostname }}
       systemd:
         daemon_reload: yes
-      when: node_exporter_service.changed
+      when: node_exporter_download.changed
 
     - name: Enable/Start Node Exporter service on {{ inventory_hostname }}
       systemd:
         name: node_exporter.service
         enabled: yes
         state: started
-      when: node_exporter_service.changed
+      when: node_exporter_download.changed
 
   become: true
   become_user: root

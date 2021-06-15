@@ -34,7 +34,7 @@ TAR={{ server.apps_dir }}/mongodb_backup/mongodb_{{ server.environment }}_$TIME.
 echo "Backing up $HOST to s3://$BUCKET/ on mongodb_$TIME";
 
 # Dump from mongodb host into backup directory
-{{ mongodb.dir }}/bin/mongodump --host $HOST --port $PORT --username $DBUSERNAME --password $DBPASSWORD --authenticationDatabase admin -o $DEST
+{{ mongodb.database_tools.dir }}/bin/mongodump --host $HOST --port $PORT --username $DBUSERNAME --password $DBPASSWORD --authenticationDatabase admin -o $DEST
 
 # Create tar of backup directory
 /bin/tar cvf $TAR -C $DEST .

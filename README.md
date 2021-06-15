@@ -163,7 +163,10 @@ Once the cordra instance inside the cordra_nsidr_server is running and its initi
 through the ansible script, we should update the handle records when the service is set up using a domain (eg: nsidr.org)
 To do so, log in as "admin" and go to Admin->Handle Records and there click in the button Update All Handles
 
-## 5. Digitise some Digital Specimen from DWC-A
+## 5. Updating the deployed infrastructure
+Updating the deployed software is done automatically when the ansible script is run, based on the provided software versions in **ansible/group_vars/all.yml**. As soon as a version is passed which is different from the currently installed version, the respective service is stopped, removed and the new version gets installed, see each script in *ansible/roles/ROLE_NAME/tasks/u1-prepare_for_update.yml*. Beforehand the update should be tested in the test environment and an EBS snapshot should be created to be able to restore the live system to the point before the update.
+
+## 6. Digitise some Digital Specimen from DWC-A
  We can use the java project openDS_CRUD_operator https://github.com/DiSSCo/openDS_CRUD_operator to digitise specimen describe in dwc-a files
  obtained from gbif like https://www.dropbox.com/s/36ni250j6iryf0x/0034622-190918142434337_Pygmaepterys_pointieri.zip?dl=0
 
@@ -171,7 +174,7 @@ To do so, log in as "admin" and go to Admin->Handle Records and there click in t
  in the cordra_prov instance. As well as if codra_nsidr was set with a domain name, being able to resolve the digital specimens
  with http://hdl.handle.net/
 
-## 6. Adding new CORDRA instances.
+## 7. Adding new CORDRA instances.
 If we want to add a new CORDRA instance, for example for CDIDR, we need to do the following:
 - Edit ```Vagrantfile``` to add configuration for the new VM
 - Edit ```ansible\inventory.ini``` to add new line for the new server under the section called cordra_servers

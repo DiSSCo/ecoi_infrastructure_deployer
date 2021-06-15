@@ -6,6 +6,16 @@
     - import_tasks: 02-configure_network.yml
       tags: [configure_network]
 
+    - import_tasks: update_app_checker.yml
+      vars:
+        app_dir: "{{ logstash.dir }}"
+        app_version: "{{ elk_version }}"
+        output_fact: logstash_will_update
+
+    - import_tasks: u1-prepare_for_update.yml
+      when: logstash_will_update
+      tags: [prepare_for_update]
+
     - import_tasks: 03-setup_logstash.yml
       tags: [setup_logstash]
 
