@@ -5,6 +5,7 @@
       shell:
         cmd: "{{ server.apps_dir }}/mongodb_backup/mongodb-s3-backup.sh > {{ server.apps_dir }}/mongodb_backup/mongodb-s3-backup.log"
       become_user: "{{ server.user }}"
+      when: server.environment != 'test'
 
     - name: Stop mondb.service on {{ inventory_hostname }}
       systemd:
@@ -14,7 +15,7 @@
 
     - name: Find existing application mongodb-X.X.X and output the path
       shell:
-        cmd: find {{ server.apps_dir }} -maxdepth 1 -type d -iname 'mongodb-*'
+        cmd: find {{ server.apps_dir }} -maxdepth 1 -type d -iname 'mongodb-linux-*'
       register: found_app_dir_abs_path
 
     - name: Assert that exactly one directory was found to delete

@@ -20,7 +20,7 @@
 
     - name: Create simbolic link between mongodb-x.x.x and mongodb directory on {{ inventory_hostname }}
       shell:
-        cmd: find . -maxdepth 1 -type d -iname 'mongodb-*' -exec ln -s {} "{{ mongodb.dir }}" \;
+        cmd: find . -maxdepth 1 -type d -iname 'mongodb-linux-*' -exec ln -s {} "{{ mongodb.dir }}" \;
         chdir: "{{ server.apps_dir }}"
         creates: "{{ mongodb.dir }}"
       when: mongodb_download.changed

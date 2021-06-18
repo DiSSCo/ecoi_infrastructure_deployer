@@ -16,7 +16,7 @@ DBPASSWORD={{ mongodb.admin_password }}
 BUCKET={{ mongodb.backup.s3.bucket }}
 
 # S3 storage class
-STORAGECLASS={{ mongodb.backup.s3.storage_class }}
+STORAGECLASS={{ storage_class }}
 
 # Current time
 TIME=`/bin/date +%Y-%m-%d_%T`
@@ -25,7 +25,7 @@ TIME=`/bin/date +%Y-%m-%d_%T`
 DEST={{ server.apps_dir }}/mongodb_backup/tmp_bk_folder
 
 # Tar file of backup directory
-TAR={{ server.apps_dir }}/mongodb_backup/mongodb_{{ server.environment }}_$TIME.tar
+TAR={{ server.apps_dir }}/mongodb_backup/mongodb_{{ interval_name }}_backup_$TIME.tar
 
 # Create backup dir (-p to avoid warning if already exists)
 /bin/mkdir -p $DEST
@@ -49,4 +49,4 @@ echo "Backing up $HOST to s3://$BUCKET/ on mongodb_$TIME";
 /bin/rm -rf $DEST
 
 # All done
-echo "Backup available at https://s3.amazonaws.com/$BUCKET/mongodb_{{ server.environment }}_$TIME.tar"
+echo "Backup available at https://s3.amazonaws.com/$BUCKET/mongodb_{{ interval_name }}_backup_$TIME.tar"

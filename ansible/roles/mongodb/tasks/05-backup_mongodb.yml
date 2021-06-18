@@ -46,22 +46,30 @@
 
     - name: Copy mongodb-s3-backup script on {{ inventory_hostname }}
       template:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
+        src: mongodb/backup/mongodb-s3-backup.sh.j2
+        dest: "{{ server.apps_dir }}/mongodb_backup/mongodb-s3-{{ item.interval_name }}-backup.sh"
         owner: "{{ server.user }}"
         group: "{{ server.group }}"
         mode: a+x
-      with_items:
-        - { src: 'mongodb/backup/mongodb-s3-backup.sh.j2', dest: '{{ server.apps_dir }}/mongodb_backup/mongodb-s3-backup.sh' }
-      when: aws_cli_download.changed
+      vars:
+        interval_name: "{{ item.interval_name }}"
+        storage_class: "{{ item.storage_class }}"
+      loop:
+        - { interval_name: 'daily', storage_class: '{{ mongodb.backup.s3.daily_backup_storage_class }}' }
+        - { interval_name: 'monthly', storage_class: '{{ mongodb.backup.s3.monthly_backup_storage_class }}' }
+        - { interval_name: 'yearly', storage_class: '{{ mongodb.backup.s3.yearly_backup_storage_class }}' }
 
-    - name: Add cronjob for automatic backup
+    - name: Add cronjobs for automatic backup
       cron:
-        name: mongodb_backup
-        special_time: daily
-        job: "{{ server.apps_dir }}/mongodb_backup/mongodb-s3-backup.sh > {{ server.apps_dir }}/mongodb_backup/mongodb-s3-backup.log"
-      when: aws_cli_download.changed
+        name: mongodb_{{ item }}_backup
+        special_time: "{{ item }}"
+        job: "{{ server.apps_dir }}/mongodb_backup/mongodb-s3-{{ item }}-backup.sh > {{ server.apps_dir }}/mongodb_backup/mongodb-s3-backup.log"
       become_user: "{{ server.user }}"
+      loop:
+        - daily
+        - monthly
+        - yearly
+      when: server.environment != 'test'
 
   become: true
   become_user: root

@@ -40,7 +40,9 @@
         "s3": {
           "region": "eu-west-2",
           "bucket": "dissco-ecoi-data",
-          "storage_class": "ONEZONE_IA"
+          "daily_backup_storage_class": "ONEZONE_IA",
+          "monthly_backup_storage_class": "GLACIER",
+          "yearly_backup_storage_class": "DEEP_ARCHIVE"
         }
       }
     },
