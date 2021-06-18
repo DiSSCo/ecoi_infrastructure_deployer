@@ -5,12 +5,14 @@
     "default_provider": "virtualbox",
     "restore_db_backup_after_setup": false,
     "ansible_limit": ["all"],
-    "ansible_tags": ["all"]
+    "ansible_tags": ["all"],
+    "private_ip4_range_cidr": "172.28.128.0/28"
   },
   "infrastructure":{
     "aws": {
       "access_key_id": "YOUR_IAM_USER_ACCESS_KEY_ID",
-      "secret_access_key": "YOUR_IAM_USER_SECRECT_ACCESS_KEY"
+      "secret_access_key": "YOUR_IAM_USER_SECRECT_ACCESS_KEY",
+      "subnet_id": "subnet-id1234xyz"
     }
   },
   "software": {
@@ -28,7 +30,7 @@
         {"username":"alex","password": "PASSWORD","id":"alex"}
       ]
     },
-    "elasticserch": {
+    "elasticsearch": {
       "admin_password":"PASSWORD"
     },
     "mongodb": {

@@ -7,11 +7,9 @@
         state: enabled
         rule: allow
         proto: tcp
-        from_ip: any
+        from_ip: "{{ server.private_ip4_range_cidr }}"
         to_ip: any
-        port : '{{ item }}'
-      with_items:
-        - "{{mongodb.port}}"
+        port : "{{ mongodb.port }}"
 
   become: true
   become_user: root

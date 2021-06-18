@@ -12,6 +12,7 @@ server:
   domain: "nsidr.org"
   environment: "{{ deployment_config['environment'] }}"
   restore_db_backup_after_setup: "{{ deployment_config['restore_db_backup_after_setup'] }}"
+  private_ip4_range_cidr: "{{ deployment_config['private_ip4_range_cidr'] }}"
 
 cordra_version: 2.3.0
 cordra:
@@ -82,7 +83,7 @@ elasticsearch:
   transport_port: 9300
   index_mapping_total_fields_limits: 100000
   elastic_user: "elastic"
-  elastic_password: "{{ server.conf.elasticserch.admin_password }}"
+  elastic_password: "{{ server.conf.elasticsearch.admin_password }}"
 
 logstash:
   dir: "{{ server.apps_dir + '/logstash'}}"

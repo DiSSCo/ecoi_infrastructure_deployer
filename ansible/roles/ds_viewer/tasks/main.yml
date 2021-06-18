@@ -3,10 +3,7 @@
     - import_tasks: 01-prepare_required_packages.yml
       tags: [prepare_packages]
 
-    - import_tasks: 02-configure_network.yml
-      tags: [configure_network]
-
-    - import_tasks: 03-setup_ds_viewer.yml
+    - import_tasks: 02-setup_ds_viewer.yml
       tags: [setup_ds_viewer]
 
     - include_role:
