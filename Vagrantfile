@@ -189,6 +189,7 @@ Vagrant.configure('2') do |config|
     # Official Ubuntu 20.04 LTS (built 2021-04-30) AMI image from Canonical, no additional costs:
     aws.ami = "ami-0194c3e07668a7e36"
     aws.keypair_name = "jointdemo"
+    aws.subnet_id = config_data['infrastructure']['aws']['subnet_id']
   end
 
   # Script that copies a ssh key to the guest machine so it can access and be accessible by the other guest machines (required for ansible to be able to run commands on them)
