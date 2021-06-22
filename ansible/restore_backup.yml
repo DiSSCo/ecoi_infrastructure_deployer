@@ -24,7 +24,7 @@
       become_user: root
       rescue:
         - debug:
-            msg: "ERROR in stopping Cordra.service and deleting the search index on {{ inventory_hostname }}"
+            msg: "ERROR in stopping Cordra.service and deleting the search index on {{ inventory_hostname }}, if you are creating the VMs from scratch then you can safely ignore this error message"
       always:
         - debug:
             msg: "FINISHED stopping Cordra.service and deleting the search index on {{ inventory_hostname }}"

@@ -3,7 +3,7 @@
   block:
     - name: Manually invoke script to backup the database to AWS
       shell:
-        cmd: "{{ server.apps_dir }}/mongodb_backup/mongodb-s3-backup.sh > {{ server.apps_dir }}/mongodb_backup/mongodb-s3-backup.log"
+        cmd: "{{ server.apps_dir }}/mongodb_backup/mongodb-s3-daily-backup.sh > {{ server.apps_dir }}/mongodb_backup/mongodb-s3-backup.log"
       become_user: "{{ server.user }}"
       when: server.environment != 'test'
 
