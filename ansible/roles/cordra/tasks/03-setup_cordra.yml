@@ -24,15 +24,21 @@
         content: "{{ cordra_version }}"
         force: no
 
+    # config.json is always rebuilt in case something has changed
     - name: Setup Cordra config files (config.json and repoInit.json) on {{ inventory_hostname }}
       template:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
+        src: cordra/config.json.j2
+        dest: "{{ cordra.dir + '/data/config.json' }}"
         owner: "{{ server.user }}"
         group: "{{ server.group }}"
-      with_items:
-        - { src: '{{ "cordra/config.json.j2" }}', dest: '{{ cordra.dir + "/data/config.json" }}' }
-        - { src: '{{ "cordra/" + instance_type + "/repoInit.json.j2" }}', dest: '{{ cordra.dir + "/data/repoInit.json" }}' }
+
+    # repoInit.json will only be rebuilt when the download has changed
+    - name: Setup Cordra config files (config.json and repoInit.json) on {{ inventory_hostname }}
+      template:
+        src: "{{ 'cordra/' + instance_type + '/repoInit.json.j2' }}"
+        dest: "{{ cordra.dir + '/data/repoInit.json' }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
       when: cordra_download.changed
 
     - name: Create cordra/data/lib directory if it does not exist
@@ -162,11 +168,9 @@
         enabled: yes
         state: started
       # In case of DB or elastic search updates cordra.service was stopped beforehand
-      when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
 
     - pause:
-        minutes: 1
-      when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
+        seconds: 10
 
     # Restart Cordra as initial start doesn't have the doip service
     - name: Restart Cordra service on {{ inventory_hostname }}
@@ -174,10 +178,9 @@
         name: cordra.service
         state: restarted
       # In case of DB or elastic search updates cordra.service was stopped beforehand
-      when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
 
     - pause:
-        minutes: 1
+        seconds: 10
       when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
 
     # import the inital data (need to do it twice as the first import only insert the first object)
@@ -189,7 +192,7 @@
       with_items:
         - "openssl s_client -connect {{ cordra[instance_type].host_ip }}:{{ cordra.doip_port }} < doip_load_initial_data.txt"
         - "openssl s_client -connect {{ cordra[instance_type].host_ip }}:{{ cordra.doip_port }} -ign_eof < doip_load_initial_data.txt &"
-        - "sleep 60"
+        - "sleep 10"
       become_user: "{{ server.user }}"
       when: cordra_download.changed
 
