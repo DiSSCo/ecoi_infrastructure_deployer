@@ -18,7 +18,7 @@ class Hash
 end
 
 # Function that creates files for the private keys hold in config_data
-def create_keys_files(config_data,external_private_key_path,internal_private_key_path)
+def create_keys_files(config_data,external_private_key_path,internal_private_key_path,internal_public_key_path)
     if !File.exist?(external_private_key_path) and !File.exist?(internal_private_key_path)
         File.open(external_private_key_path, "w") do |f|
           config_data['keys']['external_private_key'].each { |element| f.puts(element) }
@@ -28,6 +28,13 @@ def create_keys_files(config_data,external_private_key_path,internal_private_key
           config_data['keys']['internal_private_key'].each { |element| f.puts(element) }
         end
         File.chmod(0600,internal_private_key_path)
+    end
+    if !File.exist?(internal_public_key_path)
+        shell_cmd = "ssh-keygen -y -f #{internal_private_key_path}"
+        generated_key = %x[ #{shell_cmd} ]
+        File.open(internal_public_key_path, "w") do |f|
+          f.puts(generated_key)
+        end
     end
 end
 
@@ -159,13 +166,13 @@ ENV['VAGRANT_DEFAULT_PROVIDER'] = provider
 mount_synced_folder='/vagrant'
 external_private_key_path='keys/external/private.key'
 internal_private_key_path='keys/internal/private.key'
+internal_public_key_path='keys/internal/public.key'
 
 # Set ssh username depending on provider
 if provider.casecmp?("virtualbox") then
     ssh_username="vagrant"
 else
     ssh_username="ubuntu"
-    create_keys_files(config_data,external_private_key_path,internal_private_key_path)
 end
 
 
@@ -179,21 +186,24 @@ Vagrant.configure('2') do |config|
   config.trigger.before [:up] do |trigger|
       trigger.name = "Creating key files from config file values"
       trigger.ruby do |env,machine|
-        create_keys_files(config_data,external_private_key_path,internal_private_key_path)
+        create_keys_files(config_data,external_private_key_path,internal_private_key_path,internal_public_key_path)
       end
   end
+
+  # We disable vagrants default behavior which syncs the whole folder, instead
+  # rsync only minimal needed (config) data: more for the ansible control node
+  # (ie. cordra_nsidr_server) and less for the managed nodes
+  config.vm.synced_folder ".", "/vagrant", disabled: true
 
   # Default configuration for virtualbox machines
   config.vm.provider "virtualbox" do |h, override|
     override.vm.box = "bento/ubuntu-20.04"
-    override.vm.synced_folder ".", mount_synced_folder, type:"rsync", rsync__auto: true, rsync__exclude: [".git/","/config/","/keys/external/"]
   end
 
   # Default configuration for AWS virtual machines
   config.vm.provider "aws" do |aws, override|
     override.vm.box = "aws-empty-box"
     override.ssh.private_key_path = './'+external_private_key_path
-    override.vm.synced_folder ".", mount_synced_folder, type:"rsync", rsync__auto: true, rsync__exclude: [".git/","/config/","/keys/external/"]
 
     aws.access_key_id = config_data['infrastructure']['aws']['access_key_id']
     aws.secret_access_key = config_data['infrastructure']['aws']['secret_access_key']
@@ -205,26 +215,17 @@ Vagrant.configure('2') do |config|
   end
 
   # Script that copies a ssh key to the guest machine so it can access and be accessible by the other guest machines (required for ansible to be able to run commands on them)
-  $ssh_keys_script = <<-SCRIPT
+  $ssh_keys_script_control_node = <<-SCRIPT
     SSH_USERNAME=$1
     PRIVATE_KEY_PATH=$2
     cp $PRIVATE_KEY_PATH /home/$SSH_USERNAME/.ssh/id_rsa
     chmod 700 /home/$SSH_USERNAME/.ssh/id_rsa
-    LINE=$(ssh-keygen -y -f /home/$SSH_USERNAME/.ssh/id_rsa)
-    LINE="$LINE"
-    FILE="/home/$SSH_USERNAME/.ssh/authorized_keys"
-    grep -qF -- "$LINE" "$FILE" || echo "$LINE" >> "$FILE"
   SCRIPT
 
-  # Script to update the ansible inventory file with the ip assigned to the machine once it has been provisioned
-  $update_inventory_script = <<-SCRIPT
-    INVENTORY_FILE=$1
-    MACHINE_NAME=$2
-    SSH_USERNAME=$3
-    LINE="$MACHINE_NAME $(echo 'ansible_host=')$(hostname -I)"
-    LINE="$LINE"
-    sed -i "s/$MACHINE_NAME ansible_host=.*/$LINE/g" "$INVENTORY_FILE"
-    sed -i "s/ansible_ssh_user=.*/ansible_ssh_user=$SSH_USERNAME/g" "$INVENTORY_FILE"
+  $ssh_keys_script_managed_node = <<-SCRIPT
+    SSH_USERNAME=$1
+    PUBLIC_KEY_PATH=$2
+    cat $PUBLIC_KEY_PATH >> /home/$SSH_USERNAME/.ssh/authorized_keys
   SCRIPT
 
   # Script to allow ssh with ufw
@@ -244,9 +245,9 @@ Vagrant.configure('2') do |config|
   SCRIPT
 
   # Provisioner that runs the script that copies the ssh keys to the guest machine
-  config.vm.provision "setup_ssh_keys", type: "shell" do |s_keys|
-    s_keys.inline        = $ssh_keys_script
-    s_keys.args          = [ssh_username,mount_synced_folder+'/'+internal_private_key_path]
+  config.vm.provision "setup_ssh_public_key", type: "shell" do |s_keys|
+    s_keys.inline        = $ssh_keys_script_managed_node
+    s_keys.args          = [ssh_username,mount_synced_folder+'/'+internal_public_key_path]
     s_keys.privileged    = false
   end
 
@@ -263,6 +264,7 @@ Vagrant.configure('2') do |config|
   end
   config.vm.define monitoring_server_name, autostart:true do |monitoring_server|
       machine_name = monitoring_server_name
+      monitoring_server.vm.synced_folder "keys/internal", mount_synced_folder + "/keys/internal", type:"rsync", rsync__auto: true, rsync__exclude: ["private.key"]
 
       # Specific setup for this virtual machine when using the virtualbox provider
       monitoring_server.vm.provider "virtualbox" do |h, override|
@@ -278,15 +280,9 @@ Vagrant.configure('2') do |config|
         if !deployment_environment.casecmp?("test") then
           aws.elastic_ip = '18.130.121.175'
         end
-        aws.security_groups = [aws_sg['ssh'],aws_sg['monitoring_agent'],aws_sg['monitoring_server'],aws_sg['web_server']]
+        aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:monitoring_server],aws_sg[:web_server]]
       end
 
-      # Provisioner that runs the script that updates the ansible inventory with the IP assigned to this virtual machine
-      monitoring_server.vm.provision "update_inventory", type: "shell" do |s_inventory|
-        s_inventory.inline        = $update_inventory_script
-        s_inventory.args          = [mount_synced_folder+'/ansible/inventory.ini',machine_name,ssh_username]
-        s_inventory.privileged    = false
-      end
   end
 
 
@@ -297,6 +293,7 @@ Vagrant.configure('2') do |config|
   end
   config.vm.define db_server_name, autostart:true do |db_server|
       machine_name = db_server_name
+      db_server.vm.synced_folder "keys/internal", mount_synced_folder + "/keys/internal", type:"rsync", rsync__auto: true, rsync__exclude: ["private.key"]
 
       # Specific setup for this virtual machine when using the virtualbox provider
       db_server.vm.provider "virtualbox" do |h, override|
@@ -309,14 +306,7 @@ Vagrant.configure('2') do |config|
       db_server.vm.provider :aws do |aws|
         aws.tags = {Name: machine_name}
         aws.instance_type= 't3.small'
-        aws.security_groups = [aws_sg['ssh'],aws_sg['monitoring_agent'],aws_sg['mongodb_server']]
-      end
-
-      # Provisioner that runs the script that updates the ansible inventory with the IP assigned to this virtual machine
-      db_server.vm.provision "update_inventory", type: "shell" do |s_inventory|
-        s_inventory.inline        = $update_inventory_script
-        s_inventory.args          = [mount_synced_folder+'/ansible/inventory.ini',machine_name,ssh_username]
-        s_inventory.privileged    = false
+        aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:mongodb_server]]
       end
 
       if !provider.casecmp?("virtualbox") && !deployment_environment.casecmp?("test") then
@@ -335,6 +325,7 @@ Vagrant.configure('2') do |config|
   end
   config.vm.define search_engine_server_name, autostart:true do |search_engine_server|
       machine_name = search_engine_server_name
+      search_engine_server.vm.synced_folder "keys/internal", mount_synced_folder + "/keys/internal", type:"rsync", rsync__auto: true, rsync__exclude: ["private.key"]
 
       # Specific setup for this virtual machine when using the virtualbox provider
       search_engine_server.vm.provider "virtualbox" do |h, override|
@@ -347,15 +338,9 @@ Vagrant.configure('2') do |config|
       search_engine_server.vm.provider :aws do |aws|
         aws.tags = {Name: machine_name}
         aws.instance_type= 't3.medium'
-        aws.security_groups = [aws_sg['ssh'],aws_sg['monitoring_agent'],aws_sg['elk_server']]
+        aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:elk_server]]
       end
 
-      # Provisioner that runs the script that updates the ansible inventory with the IP assigned to this virtual machine
-      search_engine_server.vm.provision "update_inventory", type: "shell" do |s_inventory|
-        s_inventory.inline        = $update_inventory_script
-        s_inventory.args          = [mount_synced_folder+'/ansible/inventory.ini',machine_name,ssh_username]
-        s_inventory.privileged    = false
-      end
   end
 
 
@@ -366,6 +351,7 @@ Vagrant.configure('2') do |config|
   end
   config.vm.define ds_viewer_server_name, autostart:true do |ds_viewer_server|
       machine_name = ds_viewer_server_name
+      ds_viewer_server.vm.synced_folder "keys/internal", mount_synced_folder + "/keys/internal", type:"rsync", rsync__auto: true, rsync__exclude: ["private.key"]
 
       # Specific setup for this virtual machine when using the virtualbox provider
       ds_viewer_server.vm.provider "virtualbox" do |h, override|
@@ -381,15 +367,9 @@ Vagrant.configure('2') do |config|
         if !deployment_environment.casecmp?("test") then
           aws.elastic_ip = '18.130.207.21'
         end
-        aws.security_groups = [aws_sg['ssh'],aws_sg['monitoring_agent'],aws_sg['web_server'],aws_sg['rails_server']]
+        aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:web_server],aws_sg[:rails_server]]
       end
 
-      # Provisioner that runs the script that updates the ansible inventory with the IP assigned to this virtual machine
-      ds_viewer_server.vm.provision "update_inventory", type: "shell" do |s_inventory|
-        s_inventory.inline        = $update_inventory_script
-        s_inventory.args          = [mount_synced_folder+'/ansible/inventory.ini',machine_name,ssh_username]
-        s_inventory.privileged    = false
-      end
   end
 
 
@@ -400,6 +380,7 @@ Vagrant.configure('2') do |config|
   end
   config.vm.define cordra_prov_server_name, autostart:true do |cordra_prov_server|
       machine_name = cordra_prov_server_name
+      cordra_prov_server.vm.synced_folder "keys/internal", mount_synced_folder + "/keys/internal", type:"rsync", rsync__auto: true, rsync__exclude: ["private.key"]
 
       # Specific setup for this virtual machine when using the virtualbox provider
       cordra_prov_server.vm.provider "virtualbox" do |h, override|
@@ -415,15 +396,9 @@ Vagrant.configure('2') do |config|
         if !deployment_environment.casecmp?("test") then
           aws.elastic_ip = '3.11.185.90'
         end
-        aws.security_groups = [aws_sg['ssh'],aws_sg['monitoring_agent'],aws_sg['web_server'],aws_sg['cordra_server']]
+        aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:web_server],aws_sg[:cordra_server]]
       end
 
-      # Provisioner that runs the script that updates the ansible inventory with the IP assigned to this virtual machine
-      cordra_prov_server.vm.provision "update_inventory", type: "shell" do |s_inventory|
-        s_inventory.inline        = $update_inventory_script
-        s_inventory.args          = [mount_synced_folder+'/ansible/inventory.ini',machine_name,ssh_username]
-        s_inventory.privileged    = false
-      end
   end
 
 
@@ -434,6 +409,9 @@ Vagrant.configure('2') do |config|
   # Definition of the virtual machine that will be hosting cordra repository server
   config.vm.define cordra_nsidr_server_name, autostart:true do |cordra_nsidr_server|
       machine_name = cordra_nsidr_server_name
+      # cordra_nsidr_server.vm.synced_folder ".", mount_synced_folder, type:"rsync", rsync__auto: true, rsync__exclude: [".git/","config/","keys/external/"]
+      cordra_nsidr_server.vm.synced_folder "keys/internal/", mount_synced_folder + "/keys/internal", type:"rsync", rsync__auto: true
+      cordra_nsidr_server.vm.synced_folder "ansible/", mount_synced_folder + "/ansible", type:"rsync", rsync__auto: true
 
       # Specific setup for this virtual machine when using the virtualbox provider
       cordra_nsidr_server.vm.provider "virtualbox" do |h, override|
@@ -449,14 +427,14 @@ Vagrant.configure('2') do |config|
         if !deployment_environment.casecmp?("test") then
           aws.elastic_ip = '3.9.186.140'
         end
-        aws.security_groups = [aws_sg['ssh'],aws_sg['monitoring_agent'],aws_sg['web_server'],aws_sg['cordra_server']]
+        aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:web_server],aws_sg[:cordra_server]]
       end
 
-      # Provisioner that run the script that updates the ansible inventory with the IP assigned to this virtual machine
-      cordra_nsidr_server.vm.provision "update_inventory", type: "shell" do |s_inventory|
-        s_inventory.inline        = $update_inventory_script
-        s_inventory.args          = [mount_synced_folder+'/ansible/inventory.ini',machine_name,ssh_username]
-        s_inventory.privileged    = false
+      # Provisioner that runs the script that copies the ssh keys to the guest machine
+      cordra_nsidr_server.vm.provision "setup_ssh_access_key", type: "shell" do |s_keys|
+        s_keys.inline        = $ssh_keys_script_control_node
+        s_keys.args          = [ssh_username,mount_synced_folder+'/'+internal_private_key_path]
+        s_keys.privileged    = false
       end
 
       # Provisioner that runs the script that installs ansible local in the guest machine
