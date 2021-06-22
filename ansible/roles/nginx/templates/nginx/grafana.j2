@@ -1,5 +1,5 @@
 server {
     listen {{ item.value.external_port }};
     server_name {{ item.value.domain }};
-    return 301 {{ item.value.internal_protocol }}://$host:{{ item.value.internal_port }}$request_uri;
+    return 301 {{ item.value.internal_protocol }}://$host$request_uri;
 }
