@@ -122,6 +122,18 @@ config_data = JSON.parse(File.read('config/config.json'))
 deployment_type=config_data['deployment']['type']
 provider = config_data['deployment']['default_provider']
 deployment_environment = config_data['deployment']['environment']
+# Since we define a subnet_id for the VMs, aws-sdk requires the security_groups
+# to be passes with their IDs instead of name tags
+aws_sg = {
+  'rails_server': 'sg-00b9ace21350e6010',
+  'ssh': 'sg-0100638bf5044bd52',
+  'elk_server': 'sg-03b1bd88aadc7f924',
+  'web_server': 'sg-04252c0b6177f0479',
+  'cordra_server': 'sg-04b50bd157ad8b4ff',
+  'monitoring_server': 'sg-0b0bfa7185f217b41',
+  'mongodb_server': 'sg-0d26b81c844926313',
+  'monitoring_agent': 'sg-0eaf617263763ee13'
+}
 
 # Overwrite deploymentType and provider in case they are passed as parameters
 opts = GetoptLong.new(
@@ -266,7 +278,7 @@ Vagrant.configure('2') do |config|
         if !deployment_environment.casecmp?("test") then
           aws.elastic_ip = '18.130.121.175'
         end
-        aws.security_groups = ['ssh','monitoring_agent','monitoring_server','web_server']
+        aws.security_groups = [aws_sg['ssh'],aws_sg['monitoring_agent'],aws_sg['monitoring_server'],aws_sg['web_server']]
       end
 
       # Provisioner that runs the script that updates the ansible inventory with the IP assigned to this virtual machine
@@ -297,7 +309,7 @@ Vagrant.configure('2') do |config|
       db_server.vm.provider :aws do |aws|
         aws.tags = {Name: machine_name}
         aws.instance_type= 't3.small'
-        aws.security_groups = ['ssh','monitoring_agent','mongodb_server']
+        aws.security_groups = [aws_sg['ssh'],aws_sg['monitoring_agent'],aws_sg['mongodb_server']]
       end
 
       # Provisioner that runs the script that updates the ansible inventory with the IP assigned to this virtual machine
@@ -335,7 +347,7 @@ Vagrant.configure('2') do |config|
       search_engine_server.vm.provider :aws do |aws|
         aws.tags = {Name: machine_name}
         aws.instance_type= 't3.medium'
-        aws.security_groups = ['ssh','monitoring_agent','elk_server']
+        aws.security_groups = [aws_sg['ssh'],aws_sg['monitoring_agent'],aws_sg['elk_server']]
       end
 
       # Provisioner that runs the script that updates the ansible inventory with the IP assigned to this virtual machine
@@ -369,7 +381,7 @@ Vagrant.configure('2') do |config|
         if !deployment_environment.casecmp?("test") then
           aws.elastic_ip = '18.130.207.21'
         end
-        aws.security_groups = ['ssh','monitoring_agent','web_server','rails_server']
+        aws.security_groups = [aws_sg['ssh'],aws_sg['monitoring_agent'],aws_sg['web_server'],aws_sg['rails_server']]
       end
 
       # Provisioner that runs the script that updates the ansible inventory with the IP assigned to this virtual machine
@@ -403,7 +415,7 @@ Vagrant.configure('2') do |config|
         if !deployment_environment.casecmp?("test") then
           aws.elastic_ip = '3.11.185.90'
         end
-        aws.security_groups = ['ssh','monitoring_agent','web_server','cordra_server']
+        aws.security_groups = [aws_sg['ssh'],aws_sg['monitoring_agent'],aws_sg['web_server'],aws_sg['cordra_server']]
       end
 
       # Provisioner that runs the script that updates the ansible inventory with the IP assigned to this virtual machine
@@ -437,7 +449,7 @@ Vagrant.configure('2') do |config|
         if !deployment_environment.casecmp?("test") then
           aws.elastic_ip = '3.9.186.140'
         end
-        aws.security_groups = ['ssh','monitoring_agent','web_server','cordra_server']
+        aws.security_groups = [aws_sg['ssh'],aws_sg['monitoring_agent'],aws_sg['web_server'],aws_sg['cordra_server']]
       end
 
       # Provisioner that run the script that updates the ansible inventory with the IP assigned to this virtual machine

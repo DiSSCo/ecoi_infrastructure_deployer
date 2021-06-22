@@ -18,7 +18,7 @@
   "software": {
     "update_applications": true,
     "general": {
-      "aws_access": {
+      "aws_s3_limited_access": {
         "access_key_id": "LIMITED_USER_ACCESS_KEY_ID",
         "secret_access_key": "LIMITED_USER_SECRECT_ACCESS_KEY",
       }

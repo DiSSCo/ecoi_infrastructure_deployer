@@ -8,7 +8,7 @@ server:
   user: "{{ server_user }}"
   group: "{{ server_user }}"
   conf: "{{ software_config }}"
-  aws_conf: "{{ software_config['general']['aws_access'] }}"
+  aws_conf: "{{ software_config['general']['aws_s3_limited_access'] }}"
   domain: "nsidr.org"
   environment: "{{ deployment_config['environment'] }}"
   restore_db_backup_after_setup: "{{ deployment_config['restore_db_backup_after_setup'] }}"
@@ -25,7 +25,7 @@ cordra:
   https_internal_port: 8443
   handleServer_port: 2641
   doip_port: 9000
-  handleServer_enabled: false
+  handleServer_enabled: "{{True if deployment_config['environment'] == 'production' else False}}"
   doec_library_object: doec-1.1.0-jar-with-dependencies.jar
 
   cordra_nsidr_server:
@@ -33,7 +33,7 @@ cordra:
     handle_prefix: "{{'20.5000.1025' if deployment_config['environment'] == 'production' else 'test.20.5000.1025'}}"
     host_ip: "{{ hostvars['cordra_nsidr_server']['ansible_host'] }}"
     handleServer_host: "{{ hostvars['cordra_nsidr_server']['ansible_host'] }}"
-    base_uri: "http://{{  '' + server.domain + ':8080' + '/' }}"
+    base_uri: "http://{{  '' + server.domain + '/' }}"
     index_name: "cordra_nsidr"
     db_name: "cordra-nsidr"
     initial_users: "{{ server.conf.cordra.users }}"

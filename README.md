@@ -11,7 +11,7 @@ Vagrant project to automatize the deployment of the DiSSCo digital object reposi
 This file will contain:
     - The passwords to be used when setting up the different applications (cordra, mongodb, elk, etc.)
     - The provider of the virtual machines (aws, virtualbox) and the deployment environment (prod/test/dev, see more below)
-    - Credentials to connect to the cloud provider (aws) in "infrastructure->aws". AWS credentials must also be provided in "software->general->aws_access", these should be from an accound that only has the permission to interact with S3 (download Cordra software & upload backup)
+    - Credentials to connect to the cloud provider (aws) in "infrastructure>aws". AWS credentials must also be provided in "software>general>aws_s3_limited_access", these should be from an accound that only has the permission to interact with S3 (download Cordra software & upload backup)
     - The internal and external private keys to be installed in the virtual machines, so ansible can run commands on them.    
 
 2. Configuration about the specifications of the different VMs (type, IPs, etc.) are defined in the Vagrant file
@@ -32,10 +32,12 @@ Test and production environments are ought to be on AWS, dev environment locally
     "environment": "production",
     "domain_prefix": "",
     "default_provider": "aws",
+    "private_ip4_range_cidr": "{as given by chosen subnet_id}"
     "..."
   }
 }
 ```
+Login into the AWS management console, and go the service VPC. Per default, one VPC with three subnets should exist already. Choose any of the subnets, and copy its ID into the config under "infrastructure">"aws">"subnet_id". Then copy the IPv4 CIDR of this subnet into "deployment">"private_ip4_range_cidr".
 
 #### For test:
 ```json
@@ -44,6 +46,7 @@ Test and production environments are ought to be on AWS, dev environment locally
     "environment": "test",
     "domain_prefix": "test.",
     "default_provider": "aws",
+    "private_ip4_range_cidr": "{as given by chosen subnet_id}"
     "..."
   }
 }
@@ -56,6 +59,7 @@ For the dev environment on your local machine make sure you have [Virtualbox](ht
   "deployment":{
     "environment": "test",
     "default_provider": "virtualbox",
+    "private_ip4_range_cidr": "172.28.128.0/20"
     "..."
   }
 }
@@ -91,24 +95,33 @@ vagrant will use to connect to that cloud provider:
 If an error occurs when Vagrant trys to auto-install the specified plugins, try to install them manually from the command line, i.e. run `vagrant plugin install fog-ovirt --plugin-version 1.0.1 && vagrant plugin install aws-sdk-s3 && vagrant plugin install vagrant-aws`
 
 #### Production environment:
-1. Go to the folder where the vagrant file is and run the command ```vagrant up --no-provision``` for creating the machines in the cloud provider
-and updating the ansible/inventory.ini with their private IPv4 IPs. After that run ```vagrant reload --provision``` so all the provisioners will be executed
-including the ansible provisioner inside the cordra_nsidr_server that is responsible to install all the software in the VMs
-Note: This Vagrantfile won't work if we try to execut it inside a Linux VM running on Hyper-V on a windows host, because can't change permissions
-of private ssh keys
+ Go to the folder where the vagrant file is and run the following commands:
+
+```bash
+# This will create and provision the VMs on AWS which are 'managed nodes' by ansible afterwards
+vagrant up --no-provision
+#During the execution of above the correct IP addresses were inserted into
+# ansible/inventory.ini
+# Now we rsync to transfer the updated inventory file run the provisioners, which
+# includes the ansible script that is responsible to install all the software in the VMs
+vagrant rsync && vagrant provision
+```
+
 
 #### Test environment:
 The problem is that now Elastic IPs are defined for the test environment and the public IPv4 addresses of the machines change on every reboot. Therefore:
 
 1. Go to the folder where the vagrant file is and run the following command to create and provision the machines (without the VM that functions as ansible control node)
-```
+```bash
 vagrant up test_monitoring_server test_db_server test_search_engine_server test_ds_viewer_server test_cordra_prov_server
 ```
 2. The run ```vagrant up --no-provision test_cordra_nsidr_server```
 3. Make sure the values of the private IPv4 addresses are correct in ansible/inventory.ini
 4. Manually set the routes for test.nsidr.org, test.prov.nsidr.org, test.demo.nsidr.org, test.monitoring.nsidr.org to the corresponding public IP addresses in AWS
-5. Run ```vagrant rsync test_cordra_nsidr_server``` to sync the folder (with the updated IPv4 addresses) because otherwise vagrant only syncs upon restarting the VM
-5. Run ```vagrant provision test_cordra_nsidr_server``` to execute the ansible script which installs the software.
+5. Finally rsync the folder again (with the updated IPv4 addresses) and run the provisioners:
+```bash
+vagrant rsync test_cordra_nsidr_server && vagrant provision test_cordra_nsidr_server
+```
 
 
 #### Restoring data from the backup:
