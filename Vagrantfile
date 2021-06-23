@@ -132,12 +132,10 @@ deployment_environment = config_data['deployment']['environment']
 # Since we define a subnet_id for the VMs, aws-sdk requires the security_groups
 # to be passes with their IDs instead of name tags
 aws_sg = {
-  'rails_server': 'sg-00b9ace21350e6010',
   'ssh': 'sg-0100638bf5044bd52',
   'elk_server': 'sg-03b1bd88aadc7f924',
   'web_server': 'sg-04252c0b6177f0479',
   'cordra_server': 'sg-04b50bd157ad8b4ff',
-  'monitoring_server': 'sg-0b0bfa7185f217b41',
   'mongodb_server': 'sg-0d26b81c844926313',
   'monitoring_agent': 'sg-0eaf617263763ee13'
 }
@@ -239,9 +237,12 @@ Vagrant.configure('2') do |config|
 
   # Script to enable ssh with ufw
   $pre_ansible_script = <<-SCRIPT
+    SSH_USERNAME=$1
+    MOUNT_SYNCED_FOLDER=$2
     apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get -y install python3-pip
     export ANSIBLE_HOST_KEY_CHECKING=False
+    chown -R $SSH_USERNAME $MOUNT_SYNCED_FOLDER
   SCRIPT
 
   # Provisioner that runs the script that copies the ssh keys to the guest machine
@@ -280,7 +281,7 @@ Vagrant.configure('2') do |config|
         if !deployment_environment.casecmp?("test") then
           aws.elastic_ip = '18.130.121.175'
         end
-        aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:monitoring_server],aws_sg[:web_server]]
+        aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:web_server]]
       end
 
   end
@@ -367,7 +368,7 @@ Vagrant.configure('2') do |config|
         if !deployment_environment.casecmp?("test") then
           aws.elastic_ip = '18.130.207.21'
         end
-        aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:web_server],aws_sg[:rails_server]]
+        aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:web_server]]
       end
 
   end
@@ -440,6 +441,7 @@ Vagrant.configure('2') do |config|
       # Provisioner that runs the script that installs ansible local in the guest machine
       cordra_nsidr_server.vm.provision "prepare_machine_for_ansible", type: "shell"  do |s_pre_ansible|
         s_pre_ansible.inline = $pre_ansible_script
+        s_pre_ansible.args          = [ssh_username,mount_synced_folder]
       end
 
       # Provisioner that will run the ansible playbook in the guest machine
@@ -476,27 +478,27 @@ Vagrant.configure('2') do |config|
         end
       end
 
-      if !provider.casecmp?("virtualbox") then
-        config.trigger.after [:up] do |trigger|
-          trigger.info = "Updating ansible inventory in host machine with a vagrant trigger after up"
-          trigger.ruby do |env,machine|
-      			puts("Obtaining private ip for machine: #{machine.name}")
-      			machine.communicate.execute('hostname -I') do |type, hostname_i|
-      				puts("#{machine.name} ip = " + hostname_i.to_s)
-      				path_inventory_file = './ansible/inventory.ini'
-      				inventory_content = File.read(path_inventory_file)
-      				inventory_content = inventory_content.gsub(/ansible_ssh_user=(.*)/,"ansible_ssh_user="+ssh_username)
-              _machine_name = machine.name.to_s
-              if deployment_environment.casecmp?("test") then
-                _machine_name = _machine_name.delete_prefix("test_")
-              end
-      				inventory_content = inventory_content.gsub(/#{_machine_name} ansible_host=(.*)/, "#{_machine_name} ansible_host="+hostname_i)
-      				File.open(path_inventory_file, "w") {|file| file.puts inventory_content }
-            end
-    			end
-        end
-      end
+  end
 
+  if !provider.casecmp?("virtualbox") then
+    config.trigger.after [:up] do |trigger|
+      trigger.info = "Updating ansible inventory in host machine with a vagrant trigger after up"
+      trigger.ruby do |env,machine|
+  			puts("Obtaining private ip for machine: #{machine.name}")
+  			machine.communicate.execute('hostname -I') do |type, hostname_i|
+  				puts("#{machine.name} ip = " + hostname_i.to_s)
+  				path_inventory_file = './ansible/inventory.ini'
+  				inventory_content = File.read(path_inventory_file)
+  				inventory_content = inventory_content.gsub(/ansible_ssh_user=(.*)/,"ansible_ssh_user="+ssh_username)
+          _machine_name = machine.name.to_s
+          if deployment_environment.casecmp?("test") then
+            _machine_name = _machine_name.delete_prefix("test_")
+          end
+  				inventory_content = inventory_content.gsub(/#{_machine_name} ansible_host=(.*)/, "#{_machine_name} ansible_host="+hostname_i)
+  				File.open(path_inventory_file, "w") {|file| file.puts inventory_content }
+        end
+			end
+    end
   end
 
 end
