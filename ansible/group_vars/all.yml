@@ -102,6 +102,7 @@ kibana:
   distribution_url: https://artifacts.elastic.co/downloads/kibana/kibana-{{ elk_version }}-linux-x86_64.tar.gz
   host_ip: "{{ hostvars[groups['monitoring_servers'][0]]['ansible_host'] }}"
   http_port: 5601
+  subpath: /kibana
 
 prometheus_version: 2.27.1
 prometheus:
@@ -111,6 +112,7 @@ prometheus:
   http_port: 9090
   http_internal_port: 9091
   admin_password: "{{ server.conf.prometheus.admin_password }}"
+  subpath: /prometheus
 
 node_exporter_version: 1.1.2
 node_exporter:
@@ -141,6 +143,7 @@ grafana:
   smtp: "{{ server.conf.grafana.smtp }}"
   notification_email_address: "{{ server.conf.notification_email_address }}"
   domain: "{% if deployment_config['default_provider']=='virtualbox' %}_{% else %}{{deployment_config['domain_prefix'] + 'monitoring.' + server.domain }}{% endif %}"
+  subpath: /grafana
 
 ds_viewer:
   dir: "{{ server.apps_dir + '/dsviewer' }}"
@@ -153,3 +156,6 @@ ds_viewer:
 
 nginx:
   notification_email_address: "{{ server.conf.notification_email_address }}"
+
+monitoring_proxy:
+  domain: "{% if deployment_config['default_provider']=='virtualbox' %}_{% else %}{{deployment_config['domain_prefix'] + 'monitoring.' + server.domain }}{% endif %}"

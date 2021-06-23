@@ -3,9 +3,6 @@
     - import_tasks: 01-prepare_required_packages.yml
       tags: [prepare_packages]
 
-    - import_tasks: 02-configure_network.yml
-      tags: [configure_network]
-
     - import_tasks: update_app_checker.yml
       vars:
         app_dir: "{{ prometheus.dir }}"
@@ -16,19 +13,8 @@
       when: prometheus_will_update
       tags: [prepare_for_update]
 
-    - import_tasks: 03-setup_prometheus.yml
+    - import_tasks: 02-setup_prometheus.yml
       tags: [setup_prometheus]
-
-    - include_role:
-        name: nginx
-      vars:
-        sites:
-          prometheus:
-            ssl_enabled: true
-            external_port: "{{ prometheus.http_port }}"
-            internal_port: "{{ prometheus.http_internal_port }}"
-            internal_protocol: "http"
-            domain: "_"
 
   rescue:
     - debug:

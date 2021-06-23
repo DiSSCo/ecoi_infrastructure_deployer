@@ -3,9 +3,6 @@
     - import_tasks: 01-prepare_required_packages.yml
       tags: [prepare_packages]
 
-    - import_tasks: 02-configure_network.yml
-      tags: [configure_network]
-
     - import_tasks: update_app_checker.yml
       vars:
         app_dir: "{{ grafana.dir }}"
@@ -16,25 +13,8 @@
       when: grafana_will_update
       tags: [prepare_for_update]
 
-    - import_tasks: 03-setup_grafana.yml
+    - import_tasks: 02-setup_grafana.yml
       tags: [setup_grafana]
-
-    - include_role:
-        name: nginx
-      vars:
-        sites:
-          grafana:
-            ssl_enabled: false
-            external_port: "{{ grafana.http_port }}"
-            internal_port: "{{ grafana.http_internal_port }}"
-            internal_protocol: "https"
-            domain: "{{ grafana.domain }}"
-          grafana_secure:
-            ssl_enabled: true
-            external_port: "{{ grafana.https_port }}"
-            internal_port: "{{ grafana.http_internal_port }}"
-            internal_protocol: "https"
-            domain: "{{ grafana.domain }}"
 
   rescue:
     - debug:

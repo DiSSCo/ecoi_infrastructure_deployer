@@ -59,7 +59,7 @@
 
     - name: Create datasources, dashboards and alerts channels on {{ inventory_hostname }}
       uri:
-        url: "{{ 'https://' + grafana.host_ip + ':' + grafana.http_internal_port|string + item.url }}"
+        url: "{{ 'https://' + grafana.host_ip + grafana.subpath|string + item.url }}"
         validate_certs: no
         user: "admin"
         password: "{{ grafana.admin_password }}"

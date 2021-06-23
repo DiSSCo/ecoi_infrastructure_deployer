@@ -1,0 +1,25 @@
+- name: Setting up server with Grafana on {{ inventory_hostname }}
+  block:
+    - include_role:
+        name: nginx
+      vars:
+        sites:
+          monitoring_proxy:
+            ssl_enabled: false
+            external_port: 80
+            internal_protocol: https
+            domain: "{{ monitoring_proxy.domain }}"
+          monitoring_proxy_secure:
+            ssl_enabled: true
+            external_port: 443
+            domain: "{{ monitoring_proxy.domain }}"
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: "ERROR in Setting up server with Grafana on {{ inventory_hostname }}"
+  always:
+    - debug:
+        msg: "Setting up server with Grafana FINISHED on {{ inventory_hostname }}"
+  tags: ["grafana"]

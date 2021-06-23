@@ -1,0 +1,41 @@
+server {
+    server_name {{ item.value.domain }};
+
+    listen {{ item.value.external_port }} ssl;
+    listen [::]:{{ item.value.external_port }} ssl http2;
+
+    ssl_certificate {{ server.apps_dir + '/certs/server.crt' }};
+    ssl_certificate_key {{ server.apps_dir + '/certs/server.key' }};
+
+    location {{ grafana.subpath }} {
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $host;
+        proxy_set_header X-NginX-Proxy true;
+        proxy_pass https://127.0.0.1:{{ grafana.http_internal_port }};
+    }
+
+    location {{ kibana.subpath }} {
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $host;
+        proxy_set_header X-NginX-Proxy true;
+        proxy_pass https://127.0.0.1:{{ kibana.http_port }};
+    }
+
+    location {{ prometheus.subpath }} {
+       auth_basic "Prometheus Metric";
+       auth_basic_user_file {{ server.apps_dir + '/certs/passwdfile' }};
+
+       proxy_set_header X-Real-IP $remote_addr;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       proxy_set_header Host $host;
+       proxy_set_header X-NginX-Proxy true;
+
+       proxy_pass http://127.0.0.1:{{ prometheus.http_internal_port }};
+    }
+
+    location / {
+      return 301 https://$host/grafana;
+    }
+}

@@ -84,6 +84,7 @@
 - hosts: monitoring_servers
   gather_facts: yes
   roles:
+    - monitoring_proxy
     - prometheus
     - grafana
     - kibana

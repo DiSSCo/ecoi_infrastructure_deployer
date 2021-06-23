@@ -3,9 +3,6 @@
     - import_tasks: 01-prepare_required_packages.yml
       tags: [prepare_packages]
 
-    - import_tasks: 02-configure_network.yml
-      tags: [configure_network]
-
     - import_tasks: update_app_checker.yml
       vars:
         app_dir: "{{ kibana.dir }}"
@@ -16,7 +13,7 @@
       when: kibana_will_update
       tags: [prepare_for_update]
 
-    - import_tasks: 03-setup_kibana.yml
+    - import_tasks: 02-setup_kibana.yml
       tags: [setup_kibana]
 
   rescue:
