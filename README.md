@@ -109,7 +109,7 @@ vagrant rsync && vagrant provision
 
 
 #### Test environment:
-The problem is that now Elastic IPs are defined for the test environment and the public IPv4 addresses of the machines change on every reboot. Therefore:
+The problem is that no Elastic IPs are defined for the test environment and the public IPv4 addresses of the machines change on every reboot. Therefore:
 
 1. Go to the folder where the vagrant file is and run the following command to create and provision the machines (without the VM that functions as ansible control node)
 ```bash
