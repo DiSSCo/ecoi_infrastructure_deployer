@@ -99,16 +99,6 @@
         - { src: '{{ "cordra/" + instance_type + "/cordra_publickey" }}', dest: '{{ cordra.dir + "/data/publickey" }}' }
       when: cordra_download.changed and instance_type != 'cordra_prov_server' and cordra.handleServer_enabled
 
-    - name: Set up file with doip commands to load initial data on {{ inventory_hostname }}
-      template:
-        src: "{{ 'cordra/doip_load_initial_data.txt.j2' }}"
-        dest: "{{ cordra.dir + '/doip_load_initial_data.txt' }}"
-        owner: "{{ server.user }}"
-        group: "{{ server.group }}"
-      vars:
-        digital_objects: "{{ lookup('template', 'cordra/'+instance_type+'/initial_data.json.j2') }}"
-      when: cordra_download.changed
-
     - name: Download and unarchive Handle tools on {{ inventory_hostname }}
       unarchive:
         src: "{{ handle_tool.distribution_url }}"
@@ -171,6 +161,10 @@
 
     - pause:
         seconds: 10
+      when: >
+        cordra_download.changed or
+        (hostvars.db_server.mongodb_will_update is defined and hostvars.db_server.mongodb_will_update)
+        or (hostvars.search_engine_server.elasticsearch_will_update is defined and hostvars.search_engine_server.elasticsearch_will_update)
 
     # Restart Cordra as initial start doesn't have the doip service
     - name: Restart Cordra service on {{ inventory_hostname }}
@@ -178,10 +172,27 @@
         name: cordra.service
         state: restarted
       # In case of DB or elastic search updates cordra.service was stopped beforehand
+      when: >
+        cordra_download.changed or
+        (hostvars.db_server.mongodb_will_update is defined and hostvars.db_server.mongodb_will_update)
+        or (hostvars.search_engine_server.elasticsearch_will_update is defined and hostvars.search_engine_server.elasticsearch_will_update)
 
     - pause:
         seconds: 10
-      when: cordra_download.changed or hostvars['db_server']['mongodb_will_update'] or hostvars['search_engine_server']['elasticsearch_will_update']
+      when: >
+        cordra_download.changed or
+        (hostvars.db_server.mongodb_will_update is defined and hostvars.db_server.mongodb_will_update)
+        or (hostvars.search_engine_server.elasticsearch_will_update is defined and hostvars.search_engine_server.elasticsearch_will_update)
+
+    - name: Set up file with doip commands to load initial data on {{ inventory_hostname }}
+      template:
+        src: "{{ 'cordra/doip_load_initial_data.txt.j2' }}"
+        dest: "{{ cordra.dir + '/doip_load_initial_data.txt' }}"
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      vars:
+        digital_objects: "{{ lookup('template', 'cordra/'+instance_type+'/initial_data.json.j2') }}"
+      when: cordra_download.changed
 
     # import the inital data (need to do it twice as the first import only insert the first object)
     - name: Run DOIP commands to loading intial data on {{ inventory_hostname }}

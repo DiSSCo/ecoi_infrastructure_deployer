@@ -91,7 +91,7 @@
   become_user: root
   rescue:
     - debug:
-        msg: "ERROR in Setup Grafana on {{ inventory_hostname }}"
+        msg: "ERROR in Setup DS Viewer on {{ inventory_hostname }}"
   always:
     - debug:
         msg: "Setup Grafana FINISHED on {{ inventory_hostname }}"

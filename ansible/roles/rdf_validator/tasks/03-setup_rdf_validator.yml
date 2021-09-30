@@ -1,0 +1,70 @@
+---
+- name: Setup rdf validation service on {{ inventory_hostname }}
+  block:
+    - name: Ansible check rdf_validator application exists on {{ inventory_hostname }}
+      stat:
+        path: "{{ rdf_validator.dir }}"
+      register: app_dir
+
+    - name: Download rdf_validator on {{ inventory_hostname }}
+      git:
+        repo: "{{ rdf_validator.distribution_url }}"
+        dest: "{{ rdf_validator.dir }}"
+      when: not app_dir.stat.exists
+
+    - name: Recursively change ownership of directory on {{ inventory_hostname }}
+      file:
+        path: "{{ rdf_validator.dir }}"
+        state: directory
+        recurse: yes
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      when: not app_dir.stat.exists
+
+    - name: Npm install on {{ inventory_hostname }}
+      command: npm install --only=prod
+      args:
+        chdir: "{{ rdf_validator.dir }}"
+      become_user: "{{ server.user }}"
+      when: not app_dir.stat.exists
+
+    - name: Create rdf_validator config.js on {{ inventory_hostname }}
+      template:
+        src: rdf_validator/config.js.j2
+        dest: "{{ rdf_validator.dir + '/config/config.js' }}"
+      when: not app_dir.stat.exists
+
+    - name: Run the pipeline to update the shex schema {{ inventory_hostname }}
+      command: npm run buildshex
+      args:
+        chdir: "{{ rdf_validator.dir }}"
+      become_user: "{{ server.user }}"
+      when: not app_dir.stat.exists
+
+    - name: Config rdf_validator service on {{ inventory_hostname }}
+      template:
+        src: systemd/rdf_validator.service.j2
+        dest: /etc/systemd/system/rdf_validator.service
+      when: not app_dir.stat.exists
+
+    - name: Force systemd to reload configs on {{ inventory_hostname }}
+      systemd:
+        daemon_reload: yes
+      when: not app_dir.stat.exists
+
+    - name: Enable/Start rdf_validator service on {{ inventory_hostname }}
+      systemd:
+        name: rdf_validator.service
+        enabled: yes
+        state: started
+      when: not app_dir.stat.exists
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: ERROR in Setup rdf validation service on {{ inventory_hostname }}
+  always:
+    - debug:
+        msg: Setup rdf validation service FINISHED on {{ inventory_hostname }}
+  tags: ["install_software"]

@@ -159,3 +159,9 @@ nginx:
 
 monitoring_proxy:
   domain: "{% if deployment_config['default_provider']=='virtualbox' %}_{% else %}{{deployment_config['domain_prefix'] + 'monitoring.' + server.domain }}{% endif %}"
+
+rdf_validator:
+  dir: "{{ server.apps_dir + '/rdf_validator' }}"
+  distribution_url: https://github.com/DiSSCo/ODS_rdf_validator.git
+  port: 3000
+  shex_schema_document_id: SemanticODSShexSchema

@@ -1,0 +1,11 @@
+const config = {
+  port: 3000,
+  schemaUrl: 'https://{{ cordra.cordra_nsidr_server.domain }}/objects/{{ cordra.cordra_nsidr_server.handle_prefix }}/{{ rdf_validator.shex_schema_document_id }}?payload=ods_schema',
+  shexUpload: {
+    username: 'shexSchemaUploader',
+    password: '{% for cordra_user in cordra.cordra_nsidr_server.initial_users %}{% if cordra_user.username=='shexSchemaUploader' %}{{ cordra_user.password }}{% endif %}{% endfor %}',
+    objectId: '{{ cordra.cordra_nsidr_server.handle_prefix }}/{{ rdf_validator.shex_schema_document_id }}',
+    cordraHost: '{{ cordra.cordra_nsidr_server.domain }}'
+  }
+}
+module.exports = config;

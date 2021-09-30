@@ -1,0 +1,16 @@
+[Unit]
+Description=NodeJS based microservice for semantic RDF validtion of ODS objects
+Documentation={{ rdf_validator.distribution_url }}
+Wants=network.target
+After=network.target
+
+[Service]
+Type=simple
+Environment=NODE_PORT={{ rdf_validator.port }}
+WorkingDirectory={{ rdf_validator.dir }}
+ExecStart=/usr/bin/node bin/www
+User={{ server.user }}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -81,6 +81,11 @@
     - role: filebeat
     - role: cordra
 
+- hosts: cordra_nsidr_server
+  gather_facts: yes
+  roles:
+    - role: rdf_validator
+
 - hosts: monitoring_servers
   gather_facts: yes
   roles:
