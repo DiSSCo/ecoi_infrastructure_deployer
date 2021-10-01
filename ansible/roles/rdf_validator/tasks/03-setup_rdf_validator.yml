@@ -39,7 +39,7 @@
       args:
         chdir: "{{ rdf_validator.dir }}"
       become_user: "{{ server.user }}"
-      when: not app_dir.stat.exists
+      when: not app_dir.stat.exists and rdf_validator.is_shex_schema_provider
 
     - name: Config rdf_validator service on {{ inventory_hostname }}
       template:

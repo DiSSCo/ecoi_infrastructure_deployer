@@ -1,6 +1,6 @@
 const config = {
   port: 3000,
-  schemaUrl: 'https://{{ cordra.cordra_nsidr_server.domain }}/objects/{{ cordra.cordra_nsidr_server.handle_prefix }}/{{ rdf_validator.shex_schema_document_id }}?payload=ods_schema',
+  schemaUrl: '{% if rdf_validator.is_shex_schema_provider %} https://{{ cordra.cordra_nsidr_server.domain }}/objects/{{ cordra.cordra_nsidr_server.handle_prefix }}/{{ rdf_validator.shex_schema_document_id }}?payload=ods_schema{% else %}{{ rdf_validator.external_schema_url }}{% endif %}',
   shexUpload: {
     username: 'shexSchemaUploader',
     password: '{% for cordra_user in cordra.cordra_nsidr_server.initial_users %}{% if cordra_user.username=='shexSchemaUploader' %}{{ cordra_user.password }}{% endif %}{% endfor %}',

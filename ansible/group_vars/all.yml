@@ -165,3 +165,5 @@ rdf_validator:
   distribution_url: https://github.com/DiSSCo/ODS_rdf_validator.git
   port: 3000
   shex_schema_document_id: SemanticODSShexSchema
+  is_shex_schema_provider: no
+  external_schema_url: https://nsidr.org/objects/20.5000.1025/SemanticODSShexSchema?payload=ods_schema

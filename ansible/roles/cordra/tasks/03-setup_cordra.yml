@@ -148,7 +148,7 @@
       # In case of DB or elastic search updates cordra.service was stopped beforehand
 
     - pause:
-        seconds: 10
+        seconds: 20
       when: >
         cordra_download.changed or
         (hostvars.db_server.mongodb_will_update is defined and hostvars.db_server.mongodb_will_update)
@@ -166,7 +166,7 @@
         or (hostvars.search_engine_server.elasticsearch_will_update is defined and hostvars.search_engine_server.elasticsearch_will_update)
 
     - pause:
-        seconds: 10
+        seconds: 20
       when: >
         cordra_download.changed or
         (hostvars.db_server.mongodb_will_update is defined and hostvars.db_server.mongodb_will_update)
