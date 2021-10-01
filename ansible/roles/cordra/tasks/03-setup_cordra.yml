@@ -47,25 +47,13 @@
         owner: "{{ server.user }}"
         group: "{{ server.group }}"
         state: directory
-      when: cordra_download.changed and instance_type != 'cordra_prov_server'
+      when: cordra_download.changed and instance_type == 'cordra_nsidr_server'
 
-    - name: Download DOEC library from AWSS3 on {{ inventory_hostname }}
-      aws_s3:
-        bucket: dissco-cordra-distributions
-        object: "{{ cordra.doec_library_object }}"
-        dest: /tmp/{{ cordra.doec_library_object }}
-        mode: get
-        aws_access_key: "{{ server.aws_conf.access_key_id }}"
-        aws_secret_key: "{{ server.aws_conf.secret_access_key }}"
-      when: cordra_download.changed and instance_type != 'cordra_prov_server'
-
-    - name: Install DOEC library from temp folder {{ inventory_hostname }}
-      copy:
-        src: "/tmp/{{ cordra.doec_library_object }}"
-        dest: "{{ cordra.dir }}/data/lib/{{ cordra.doec_library_object }}"
-        owner: "{{ server.user }}"
-        group: "{{ server.group }}"
-      when: cordra_download.changed and instance_type != 'cordra_prov_server'
+    - name: Download DOEC library from remote link on {{ inventory_hostname }}
+      get_url:
+        url: "{{ cordra.doec_library_url }}"
+        dest: "{{ cordra.dir }}/data/lib/doec_library.jar"
+      when: cordra_download.changed and instance_type == 'cordra_nsidr_server'
 
     - name: Copy doec_config properties on {{ inventory_hostname }}
       template:
@@ -75,7 +63,7 @@
         group: "{{ server.group }}"
       with_items:
         - { src: '{{ "cordra/" + instance_type + "/doec_config.properties.j2" }}', dest: '{{ cordra.dir + "/data/doec_config.properties" }}' }
-      when: cordra_download.changed and instance_type != 'cordra_prov_server'
+      when: cordra_download.changed and instance_type == 'cordra_nsidr_server'
 
     # java_cert module per default replaces an existing certificate in the keystore if
     # the new cert is different. Attention: ansible community package > 2.5.2 is needed
@@ -97,7 +85,7 @@
       with_items:
         - { src: '{{ "cordra/" + instance_type + "/cordra_privatekey" }}', dest: '{{ cordra.dir + "/data/privatekey" }}' }
         - { src: '{{ "cordra/" + instance_type + "/cordra_publickey" }}', dest: '{{ cordra.dir + "/data/publickey" }}' }
-      when: cordra_download.changed and instance_type != 'cordra_prov_server' and cordra.handleServer_enabled
+      when: cordra_download.changed and instance_type == 'cordra_nsidr_server' and cordra.handleServer_enabled
 
     - name: Download and unarchive Handle tools on {{ inventory_hostname }}
       unarchive:

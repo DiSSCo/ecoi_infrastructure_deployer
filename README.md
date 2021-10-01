@@ -59,7 +59,7 @@ For the dev environment on your local machine make sure you have [Virtualbox](ht
   "deployment":{
     "environment": "test",
     "default_provider": "virtualbox",
-    "private_ip4_range_cidr": "172.28.128.0/20"
+    "private_ip4_range_cidr": "172.28.128.0/28"
     "..."
   }
 }
@@ -70,9 +70,17 @@ For the local setup to work a host-only network is needed. For this open the Vir
 - IPv4 Mask: 255.255.255.0
 - DHCP not enabled
 
-Then, copy the whole content of the file config/local_dev_inventory.ini and use it to replace the content of ansible/inventory.ini. With this you have a default configuration for the IP addresses of the VMs. You can skip the next step and start the setup directly with ```vagrant up```
+Then, copy the whole content of the file config/local_dev_inventory.ini and use it to replace the content of ansible/inventory.ini. With this you have a default configuration for the IP addresses of the VMs. If any of the configuration above conflicts with your host machine config, you can adjust the IP addresses to your need and update the changes in the Vagrantfile.
 
-If any of the configuration above conflicts with your host machine config, you can adjust the IP addresses to your need and update the changes in the Vagrantfile.
+Next, ansible requires an ssh key pair in order to provision the VMs. In production ssh key is generated out of the passed values in the config.json, however for local dev setup it is sufficient to execute
+
+```
+ssh-keygen -m PEM -t rsa -b 2048 -f keys/internal/private.key -N ""
+mv keys/internal/private.key.pub keys/internal/public.key
+```
+
+You can now skip the next step and start the setup directly with ```vagrant up```
+
 
 #### Note:
 After creation of the VMs, Vagrant stores the information related to the instances in the .vagrant/ folder. Therefore, when you change the deployment environment you have to delete the .vagrant/ folder.

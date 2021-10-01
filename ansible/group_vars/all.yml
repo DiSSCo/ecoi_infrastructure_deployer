@@ -26,7 +26,7 @@ cordra:
   handleServer_port: 2641
   doip_port: 9000
   handleServer_enabled: "{{True if deployment_config['environment'] == 'production' else False}}"
-  doec_library_object: doec-1.1.0-jar-with-dependencies.jar
+  doec_library_url: https://github.com/DiSSCo/doec/releases/download/v1.1.0/doec-1.1.0-jar-with-dependencies.jar
 
   cordra_nsidr_server:
     domain: "{% if deployment_config['default_provider']=='virtualbox' %}_{% else %}{{deployment_config['domain_prefix'] + '' + server.domain }}{% endif %}"
