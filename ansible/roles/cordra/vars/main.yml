@@ -3,7 +3,7 @@
 
 instance_type: "{{ inventory_hostname }}"
 
-java_home: /usr/lib/jvm/java-8-openjdk-amd64
+java_home: /usr/lib/jvm/java-11-openjdk-amd64
 
 os_environment_variables:
   - key: CORDRADIR

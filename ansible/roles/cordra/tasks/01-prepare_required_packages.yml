@@ -7,7 +7,7 @@
         state: present
       vars:
         packages:
-          - openjdk-8-jre
+          - openjdk-11-jre
           - unzip
           - apt-transport-https
           - libcurl4
