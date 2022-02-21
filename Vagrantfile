@@ -137,7 +137,8 @@ aws_sg = {
   'web_server': 'sg-04252c0b6177f0479',
   'cordra_server': 'sg-04b50bd157ad8b4ff',
   'mongodb_server': 'sg-0d26b81c844926313',
-  'monitoring_agent': 'sg-0eaf617263763ee13'
+  'monitoring_agent': 'sg-0eaf617263763ee13',
+  'image_detection_server': 'sg-0716ad8697ced2bed'
 }
 
 # Overwrite deploymentType and provider in case they are passed as parameters
@@ -283,7 +284,6 @@ Vagrant.configure('2') do |config|
         end
         aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:web_server]]
       end
-
   end
 
 
@@ -370,7 +370,31 @@ Vagrant.configure('2') do |config|
         end
         aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:web_server]]
       end
+  end
 
+
+  # Definition of the virtual machine that will be hosting the plant organ detection service
+  object_detection_server_name = 'object_detection_server'
+  if deployment_environment.casecmp?("test") then
+    object_detection_server_name.prepend('test_')
+  end
+  config.vm.define object_detection_server_name, autostart:true do |object_detection_server|
+      machine_name = object_detection_server_name
+      object_detection_server.vm.synced_folder "keys/internal", mount_synced_folder + "/keys/internal", type:"rsync", rsync__auto: true, rsync__exclude: ["private.key"]
+
+      # Specific setup for this virtual machine when using the virtualbox provider
+      object_detection_server.vm.provider "virtualbox" do |h, override|
+        object_detection_server.vm.network "private_network", ip: "172.28.128.9", adapter: 2
+        h.memory = 1024
+        h.cpus = 1
+      end
+
+      # Specific setup for this virtual machine when using the aws provider
+      object_detection_server.vm.provider :aws do |aws|
+        aws.tags = {Name: machine_name}
+        aws.instance_type= 't3.small'
+        aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:image_detection_server]]
+      end
   end
 
 
@@ -399,7 +423,6 @@ Vagrant.configure('2') do |config|
         end
         aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:web_server],aws_sg[:cordra_server]]
       end
-
   end
 
 

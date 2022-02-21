@@ -1,0 +1,14 @@
+[Unit]
+Description=Microservice for detectron2-based object detection
+Documentation={{ object_detection_service.distribution_url }}
+After=network.target
+
+[Service]
+Type=simple
+User={{ server.user }}
+WorkingDirectory={{ object_detection_service.dir }}
+ExecStart={{ object_detection_service.dir }}/bin/uvicorn main:app --host {{ object_detection_service.host_ip }} --port 8000
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

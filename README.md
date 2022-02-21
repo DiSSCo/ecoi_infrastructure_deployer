@@ -121,7 +121,7 @@ The problem is that no Elastic IPs are defined for the test environment and the 
 
 1. Go to the folder where the vagrant file is and run the following command to create and provision the machines (without the VM that functions as ansible control node)
 ```bash
-vagrant up test_monitoring_server test_db_server test_search_engine_server test_ds_viewer_server test_cordra_prov_server
+vagrant up test_monitoring_server test_db_server test_search_engine_server test_ds_viewer_server test_cordra_prov_server test_object_detection_server
 ```
 2. The run ```vagrant up --no-provision test_cordra_nsidr_server```
 3. Make sure the values of the private IPv4 addresses are correct in ansible/inventory.ini
@@ -157,6 +157,8 @@ If the servers are running already and the ansible script should only restore th
 Check that all the services are up and running correctly. To see the list of the services running in each machine have a look at
 docs/ECOIS_subcomponents_deployment_diagram.pdf
 
+#### API test suite
+Per default the Vagrant script executes a set of tests against the HTTP + DOIP API interfaces of the newly created Cordra instance in order to check whether the setup was successfull. For this test suite to run successfully it is necessary to download [this file](https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.8.1/junit-platform-console-standalone-1.8.1.jar) and place it with the name `junit-platform-console-standalone.jar` in the folder `test_suite`. Also [this project](https://github.com/jgrieb/nsidr-api-tests) must be compiled and the resulting `nsidr-api-tests-0.1-test-jar-with-dependencies.jar` must be placed in the same folder. If you don't need the tests just comment out the block in the Vagrantfile starting with `cordra_nsidr_server.trigger.after :provision do |trigger| (...)`.
 
 ### Side note: Starting vagrant from a new host computer (while VMs are running)
 If you copy this repository and want to execute a command like `vagrant provision monitoring_server` (while the VM is running on AWS) Vagrant will return the error "Instance is not created" because it cannot connect to the VM. This is because the .vagrant folder is ignored in the github repository. To make Vagrant understand that the VMs are actually already running on AWS and know where to find them (so that Vagrant does not create new instances), the following workaround must be applied (only once at the beginning):

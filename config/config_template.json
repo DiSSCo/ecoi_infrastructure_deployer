@@ -26,9 +26,9 @@
     "cordra": {
       "admin_password":"PASSWORD",
       "users": [
-        {"username":"francisco","password": "PASSWORD","id":"francisco"},
         {"username":"alex","password": "PASSWORD","id":"alex"},
-        {"username":"shexSchemaUploader","password": "PASSWORD","id":"shexschemauploader"}
+        {"username":"shexSchemaUploader","password": "PASSWORD","id":"shexschemauploader"},
+        {"username":"objectDetectionServiceUploader","password": "PASSWORD","id":"objectdetectionserviceuploader"}
       ]
     },
     "elasticsearch": {

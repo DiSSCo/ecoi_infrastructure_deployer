@@ -1,0 +1,9 @@
+{
+  "url": "https://{{ cordra.cordra_nsidr_server.domain }}",
+  "credentials":{
+    "username": "objectDetectionServiceUploader",
+    "password": "{% for cordra_user in cordra.cordra_nsidr_server.initial_users %}{% if cordra_user.username=='objectDetectionServiceUploader' %}{{ cordra_user.password }}{% endif %}{% endfor %}"
+  },
+  "verifyTls": true,
+  "objectThingClasses": ["leaf", "flower", "fruit", "seed", "stem", "root"]
+}

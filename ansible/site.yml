@@ -25,6 +25,11 @@
     - basic
     - node_exporter
 
+- hosts: object_detection_servers
+  gather_facts: yes
+  roles:
+    - object_detection_service
+
 - hosts: search_engine_servers
   gather_facts: yes
   tasks:

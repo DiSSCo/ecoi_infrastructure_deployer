@@ -1,0 +1,75 @@
+---
+- name: Setup object detection service on {{ inventory_hostname }}
+  block:
+    - name: Ansible check object_detection_service application exists on {{ inventory_hostname }}
+      stat:
+        path: "{{ object_detection_service.dir }}"
+      register: app_dir
+
+    - name: Download object_detection_service on {{ inventory_hostname }}
+      git:
+        repo: "{{ object_detection_service.distribution_url }}"
+        dest: "{{ object_detection_service.dir }}"
+      when: not app_dir.stat.exists
+
+    - name: Recursively change ownership of directory on {{ inventory_hostname }}
+      file:
+        path: "{{ object_detection_service.dir }}"
+        state: directory
+        recurse: yes
+        owner: "{{ server.user }}"
+        group: "{{ server.group }}"
+      when: not app_dir.stat.exists
+
+    #- name: python3 create virtualenv on {{ inventory_hostname }}
+    #  command: python3 -m venv {{ object_detection_service.dir }}
+    #  become_user: "{{ server.user }}"
+    #  when: not app_dir.stat.exists
+
+    - name: Create object_detection_service cordraConfig.json on {{ inventory_hostname }}
+      template:
+        src: object_detection_service/cordraConfig.json.j2
+        dest: "{{ object_detection_service.dir + '/config/cordraConfig.json' }}"
+      when: not app_dir.stat.exists
+
+    - name: Download trained neural network model {{ inventory_hostname }}
+      get_url:
+        url: "{{ object_detection_service.model_final_url }}"
+        dest: "{{ object_detection_service.dir + '/data/model_final.pth' }}"
+      when: not app_dir.stat.exists
+
+    - name: Pip install dependencies for object_detection_service on {{ inventory_hostname }}
+      pip:
+        requirements: "{{ object_detection_service.dir + '/requirements.txt'}}"
+        virtualenv: "{{ object_detection_service.dir }}"
+        virtualenv_command: python3 -m venv
+      become_user: "{{ server.user }}"
+      when: not app_dir.stat.exists
+
+    - name: Config object_detection_service.service for systemd on {{ inventory_hostname }}
+      template:
+        src: systemd/object_detection_service.service.j2
+        dest: /etc/systemd/system/object_detection_service.service
+      when: not app_dir.stat.exists
+
+    - name: Force systemd to reload configs on {{ inventory_hostname }}
+      systemd:
+        daemon_reload: yes
+      when: not app_dir.stat.exists
+
+    - name: Enable/Start object_detection_service.service on {{ inventory_hostname }}
+      systemd:
+        name: object_detection_service.service
+        enabled: yes
+        state: started
+      when: not app_dir.stat.exists
+
+  become: true
+  become_user: root
+  rescue:
+    - debug:
+        msg: ERROR in Setup object_detection_service on {{ inventory_hostname }}
+  always:
+    - debug:
+        msg: Setup object_detection_service FINISHED on {{ inventory_hostname }}
+  tags: ["install_software"]

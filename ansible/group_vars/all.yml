@@ -167,3 +167,10 @@ rdf_validator:
   shex_schema_document_id: SemanticODSShexSchema
   is_shex_schema_provider: no
   external_schema_url: https://nsidr.org/objects/20.5000.1025/SemanticODSShexSchema?payload=ods_schema
+
+object_detection_service:
+  dir: "{{ server.apps_dir + '/object_detection_service' }}"
+  distribution_url: https://github.com/jgrieb/object-detection-service.git
+  model_final_url: https://github.com/2younis/plant-organ-detection/releases/download/v1.0/model_final.pth
+  host_ip: "{{ hostvars[groups['object_detection_servers'][0]]['ansible_host'] }}"
+  port: 8000
