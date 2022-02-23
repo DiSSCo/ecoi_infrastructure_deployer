@@ -52,9 +52,9 @@ handle_tool:
   dir: "{{ server.apps_dir + '/handle'}}"
   distribution_url: https://www.handle.net/hnr-source/handle-9.3.0-distribution.tar.gz
 
-mongodb_version: 4.4.5
+mongodb_version: 5.0.6
 # Since MongoDBv4.4 the tools mongodump and mongorestore come in a separate distribution
-mongodb_database_tools_version: 100.3.0
+mongodb_database_tools_version: 100.5.2
 mongodb:
   distribution_url: https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-ubuntu2004-{{ mongodb_version }}.tgz
   dir: "{{ server.apps_dir + '/mongodb'}}"
@@ -104,7 +104,7 @@ kibana:
   http_port: 5601
   subpath: /kibana
 
-prometheus_version: 2.27.1
+prometheus_version: 2.33.2
 prometheus:
   dir: "{{ server.apps_dir + '/prometheus' }}"
   distribution_url: https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz
@@ -131,7 +131,7 @@ blackbox_exporter:
   http_internal_port: 9116
   admin_password: "{{ server.conf.prometheus.admin_password }}"
 
-grafana_version: 8.0.2
+grafana_version: 8.4.1
 grafana:
   dir: "{{ server.apps_dir + '/grafana' }}"
   distribution_url: https://dl.grafana.com/oss/release/grafana-{{ grafana_version }}.linux-amd64.tar.gz
