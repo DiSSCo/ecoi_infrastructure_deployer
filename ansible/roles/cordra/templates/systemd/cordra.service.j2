@@ -11,6 +11,7 @@ ExecStartPost={{ server.apps_dir}}/check_port.sh {{ cordra.http_internal_port }}
 ExecStop={{ cordra.dir }}/shutdown
 User={{ server.user }}
 Restart=always
+TimeoutSec=1800
 
 [Install]
 WantedBy=multi-user.target
