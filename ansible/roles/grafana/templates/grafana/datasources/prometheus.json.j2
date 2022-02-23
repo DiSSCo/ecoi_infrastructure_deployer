@@ -1,7 +1,7 @@
 {
 	"name": "Prometheus",
 	"type": "prometheus",
-	"url": "https://{{ prometheus.host_ip }}:{{ prometheus.http_port }}",
+	"url": "https://{{monitoring_proxy.domain + prometheus.subpath}}",
 	"access": "proxy",
 	"basicAuth": true,
 	"basicAuthUser": "prometheus",

@@ -59,7 +59,7 @@
 
     - name: Create datasources, dashboards and alerts channels on {{ inventory_hostname }}
       uri:
-        url: "{{ 'https://' + grafana.host_ip + grafana.subpath|string + item.url }}"
+        url: "{{ 'https://' + monitoring_proxy.domain + grafana.subpath|string + item.url }}"
         validate_certs: no
         user: "admin"
         password: "{{ grafana.admin_password }}"
@@ -77,7 +77,7 @@
         - { body: '{{ lookup("template","grafana/dashboards/cordra_nsidr_ds.json.j2") }}', url: '{{ "/api/dashboards/db" }}' }
         - { body: '{{ lookup("template","grafana/dashboards/ecoi_systemd_services.json.j2") }}', url: '{{ "/api/dashboards/db" }}' }
         - { body: '{{ lookup("file","grafana/dashboards/system_status.json") }}', url: '{{ "/api/dashboards/db" }}' }
-      when: grafana_download.changed
+      #when: grafana_download.changed
 
   become: true
   become_user: root
