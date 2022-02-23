@@ -104,30 +104,30 @@
         creates: "{{ handle_tool.dir }}"
       when: cordra_download.changed
 
-    - name: Get all handle ids to be deleted in the handle server before starting Cordra on {{ inventory_hostname }}
-      shell:
-        cmd: ./bin/hdl-list {{ cordra[instance_type].handle_prefix }}/repo 300 {{ cordra.dir }}/data/privatekey {{ cordra[instance_type].handle_prefix }} > {{ cordra.dir }}/hdl-list-to-delete.txt
-        #cmd: |
-        #  grep -oP '"id": "\K{{ cordra['cordra_nsidr_server'].handle_prefix }}/[\w-.!]+' {{ cordra.dir }}/doip_load_initial_data.txt > {{ cordra.dir }}/hdl-list-to-delete.txt
-        chdir: "{{ handle_tool.dir }}"
-      when: cordra_download.changed and cordra[instance_type].base_uri!="" and cordra.handleServer_enabled
+    #- name: Get all handle ids to be deleted in the handle server before starting Cordra on {{ inventory_hostname }}
+    #  shell:
+    #    cmd: ./bin/hdl-list {{ cordra[instance_type].handle_prefix }}/repo 300 {{ cordra.dir }}/data/privatekey {{ cordra[instance_type].handle_prefix }} > {{ cordra.dir }}/hdl-list-to-delete.txt
+    #    #cmd: |
+    #    #  grep -oP '"id": "\K{{ cordra['cordra_nsidr_server'].handle_prefix }}/[\w-.!]+' {{ cordra.dir }}/doip_load_initial_data.txt > {{ cordra.dir }}/hdl-list-to-delete.txt
+    #    chdir: "{{ handle_tool.dir }}"
+    #  when: cordra_download.changed and cordra[instance_type].base_uri!="" and cordra.handleServer_enabled
 
-    - name: Delete handle ids from handle server before starting Cordra on {{ inventory_hostname }}
-      shell:
-        cmd: ./bin/hdl-delete {{ cordra[instance_type].handle_prefix }}/repo 300 {{ cordra.dir }}/data/privatekey {{ cordra.dir }}/hdl-list-to-delete.txt
-        chdir: "{{ handle_tool.dir }}"
-      when: cordra_download.changed and cordra[instance_type].base_uri!="" and cordra.handleServer_enabled
+    #- name: Delete handle ids from handle server before starting Cordra on {{ inventory_hostname }}
+    #  shell:
+    #    cmd: ./bin/hdl-delete {{ cordra[instance_type].handle_prefix }}/repo 300 {{ cordra.dir }}/data/privatekey {{ cordra.dir }}/hdl-list-to-delete.txt
+    #    chdir: "{{ handle_tool.dir }}"
+    #  when: cordra_download.changed and cordra[instance_type].base_uri!="" and cordra.handleServer_enabled
 
-    - name: Copy delete_handle_ids_from_handle_server.sh script on {{ inventory_hostname }}
-      template:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-        owner: "{{ server.user }}"
-        group: "{{ server.group }}"
-        mode: a+x
-      with_items:
-        - { src: 'cordra/delete_handle_ids_from_handle_server.sh.j2', dest: '{{ cordra.dir }}/bin' }
-      when: cordra_download.changed and cordra.handleServer_enabled
+    #- name: Copy delete_handle_ids_from_handle_server.sh script on {{ inventory_hostname }}
+    #  template:
+    #    src: "{{ item.src }}"
+    #    dest: "{{ item.dest }}"
+    #    owner: "{{ server.user }}"
+    #    group: "{{ server.group }}"
+    #    mode: a+x
+    #  with_items:
+    #    - { src: 'cordra/delete_handle_ids_from_handle_server.sh.j2', dest: '{{ cordra.dir }}/bin' }
+    #  when: cordra_download.changed and cordra.handleServer_enabled
 
     - name: Config Cordra service on {{ inventory_hostname }}
       template:
