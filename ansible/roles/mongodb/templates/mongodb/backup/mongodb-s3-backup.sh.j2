@@ -25,7 +25,7 @@ TIME=`/bin/date +%Y-%m-%d_%T`
 DEST={{ server.apps_dir }}/mongodb_backup/tmp_bk_folder
 
 # Tar file of backup directory
-TAR={{ server.apps_dir }}/mongodb_backup/mongodb_{{ interval_name }}_backup_$TIME.tar
+TAR={{ server.apps_dir }}/mongodb_backup/mongodb_{{ interval_name }}_backup_$TIME.tar.gz
 
 # Create backup dir (-p to avoid warning if already exists)
 /bin/mkdir -p $DEST
@@ -37,7 +37,7 @@ echo "Backing up $HOST to s3://$BUCKET/ on mongodb_$TIME";
 {{ mongodb.database_tools.dir }}/bin/mongodump --host $HOST --port $PORT --username $DBUSERNAME --password $DBPASSWORD --authenticationDatabase admin -o $DEST
 
 # Create tar of backup directory
-/bin/tar cvf $TAR -C $DEST .
+/bin/tar czvf $TAR -C $DEST .
 
 # Upload tar to s3
 /usr/local/bin/aws s3 cp $TAR s3://$BUCKET/ --storage-class $STORAGECLASS

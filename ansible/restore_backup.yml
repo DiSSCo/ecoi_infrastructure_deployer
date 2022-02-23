@@ -55,7 +55,7 @@
             warn: false
           with_items:
             - "mkdir /tmp/mongodb_backup_dir"
-            - "tar -xf /tmp/{{ backup_file_name.stdout }} -C /tmp/mongodb_backup_dir/"
+            - "tar -xzf /tmp/{{ backup_file_name.stdout }} -C /tmp/mongodb_backup_dir/"
             - "{{ mongodb.database_tools.dir }}/bin/mongorestore -h {{mongodb.host_ip}} --port {{mongodb.port}} -u root --password {{ mongodb.admin_password }} --authenticationDatabase admin --drop /tmp/mongodb_backup_dir"
             - "rm /tmp/{{ backup_file_name.stdout }}"
             - "rm -r /tmp/mongodb_backup_dir"
