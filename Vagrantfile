@@ -338,7 +338,7 @@ Vagrant.configure('2') do |config|
       # Specific setup for this virtual machine when using the aws provider
       search_engine_server.vm.provider :aws do |aws|
         aws.tags = {Name: machine_name}
-        aws.instance_type= 't3.medium'
+        aws.instance_type= 't3.large'
         aws.security_groups = [aws_sg[:ssh],aws_sg[:monitoring_agent],aws_sg[:elk_server]]
       end
 
